@@ -148,6 +148,13 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
                 frame_image = draw_bounding_boxes(frame_image, obj_meta, obj_meta.confidence)
             # save and draw box when we have a person
             if obj_meta.class_id == PGIE_CLASS_ID_PERSON and frame_meta.pad_index % 30 == 0:
+                # Getting Image data using nvbufsurface
+                # the input should be address of buffer and batch_id
+                n_frame = pyds.get_nvds_buf_surface(hash(gst_buffer), frame_meta.batch_id)
+                # convert python array into numpy array format.
+                frame_image = np.array(n_frame, copy=True, order='C')
+                # covert the array into cv2 default color format
+                frame_image = cv2.cvtColor(frame_image, cv2.COLOR_RGBA2BGRA)
                 frame_image = draw_bounding_boxes(frame_image, obj_meta, obj_meta.confidence)
                 save_image = True
             # continue with the next object when there is one
