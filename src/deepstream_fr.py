@@ -40,9 +40,9 @@ PGIE_CLASS_ID_VEHICLE = 0
 global PGIE_CLASS_ID_PERSON
 PGIE_CLASS_ID_PERSON = 2
 MAX_DISPLAY_LEN = 64
-PGIE_CLASS_ID_VEHICLE = 0
+# PGIE_CLASS_ID_VEHICLE = 0
 PGIE_CLASS_ID_BICYCLE = 1
-PGIE_CLASS_ID_PERSON = 2
+# PGIE_CLASS_ID_PERSON = 2
 PGIE_CLASS_ID_ROADSIGN = 3
 MUXER_OUTPUT_WIDTH = 1920
 MUXER_OUTPUT_HEIGHT = 1080
@@ -76,7 +76,14 @@ capture_filename = 'Frame-'  # this is the name to be used when a screenshot is 
 unknown_face_filename = 'UnknownFace-'  # this is the name to be used when an unknow face is found
 border = 50  # store unknown face with some surrounding
 transcoder = cv2.CAP_FFMPEG  # cv2.CAP_V4L cv2.CAP_V4L2 cv2.CAP_DC1394 cv2.CAP_GSTREAMER or cv2.CAP_FFMPEG
-
+# additional global variables
+global Names
+Names = []
+global Sequence
+Sequence = []
+global Encodings
+Encodings = []
+global log
 
 # tiler_sink_pad_buffer_probe  will extract metadata received on tiler src pad
 # and update params for drawing rectangle, object information etc.
@@ -139,6 +146,11 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
 
                 save_image = True
                 frame_image = draw_bounding_boxes(frame_image, obj_meta, obj_meta.confidence)
+            # save and draw box when we have a person
+            if obj_meta.class_id == PGIE_CLASS_ID_PERSON and frame_meta.pad_index % 30 == 0:
+                frame_image = draw_bounding_boxes(frame_image, obj_meta, obj_meta.confidence)
+                save_image = True
+            # continue with the next object when there is one
             try:
                 l_obj = l_obj.next
             except StopIteration:
@@ -163,7 +175,7 @@ def face_recog(image, obj_meta):
     frame = image
     face_locations = face_recognition.face_locations(rgb_small_frame, number_of_times_to_upsample=up_scale, model=detection_model)
     if face_locations:
-        log.debug(f'--- Number of faces found in image: {len(face_locations)}')
+        log.info(f'--- Number of faces found in image: {len(face_locations)}')
     face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations, num_jitters=number_jitters, model=encoding_model)
 
     face_names = []
@@ -315,7 +327,6 @@ def main(args):
         sys.exit(1)
 
     # start logging and counter and create directory for any unknow faces just in case we find any
-    global log
     logpath = Path(logdir)
     logpath.mkdir(parents=True, exist_ok=True)
     log = init_log(logfile, process, loglevel, logsize, logbackups)
@@ -325,9 +336,6 @@ def main(args):
     unknow_faces_path.mkdir(parents=True, exist_ok=True)
 
     # opening learned faces file
-    global Names
-    global Sequence
-    global Encodings
     log.info(f'- Opening learned faces file: {learnedfile}')
     with open(learnedfile, 'rb') as trainedfacesfile:
         # reading the learned faces file
@@ -336,14 +344,14 @@ def main(args):
         Encodings = pickle.load(trainedfacesfile)
 
     os.mkdir(folder_name)
-    log.warning(f'Frames will be saved in: {folder_name}')
+    log.warning(f'- Frames will be saved in: {folder_name}')
     # Standard GStreamer initialization
     GObject.threads_init()
     Gst.init(None)
 
     # Create gstreamer elements */
     # Create Pipeline element that will form a connection of other elements
-    print("Creating Pipeline \n ")
+    log.warning("- Creating Pipeline\n")
     pipeline = Gst.Pipeline()
     is_live = False
 
