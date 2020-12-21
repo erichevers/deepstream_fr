@@ -61,6 +61,7 @@ logsize = 200000
 logbackups = 5
 
 # other variables
+learnedfile = logdir + 'known_faces/trained_faces.pkl'
 unknow_face_dir = logdir + 'UnknownFaces/'
 gui = True  # use the GUI as output to show the stream
 save_unknown = True  # save unknow faces
@@ -131,7 +132,7 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
                     # Getting Image data using nvbufsurface
                     # the input should be address of buffer and batch_id
                     n_frame = pyds.get_nvds_buf_surface(hash(gst_buffer), frame_meta.batch_id)
-                    # convert python array into numy array format.
+                    # convert python array into numpy array format.
                     frame_image = np.array(n_frame, copy=True, order='C')
                     # covert the array into cv2 default color format
                     frame_image = cv2.cvtColor(frame_image, cv2.COLOR_RGBA2BGRA)
@@ -156,6 +157,55 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
     return Gst.PadProbeReturn.OK
 
 
+def face_recog(image, obj_meta):
+    # Find all the faces and face encodings in the current frame of video
+    rgb_small_frame = image
+    frame = image
+    face_locations = face_recognition.face_locations(rgb_small_frame, number_of_times_to_upsample=up_scale, model=detection_model)
+    if face_locations:
+        log.debug(f'--- Number of faces found in image: {len(face_locations)}')
+    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations, num_jitters=number_jitters, model=encoding_model)
+
+    face_names = []
+    for face_encoding in face_encodings:
+        # See if the face is a match for the known face(s)
+        matches = face_recognition.compare_faces(Encodings, face_encoding)
+        name = unknown_face_name
+        # use the known face with the smallest distance to the new face
+        face_distances = face_recognition.face_distance(Encodings, face_encoding)
+        best_match_index = np.argmin(face_distances)
+        if matches[best_match_index]:
+            name = f'{Names[best_match_index]}-{Sequence[best_match_index]}'
+        face_names.append(name)
+        # some logging below
+        if name == unknown_face_name:
+            log.info('-- Unknown face detected')
+        else:
+            log.info(f'-- Known face detected: {name}')
+    
+    # display the results
+    cvfont = cv2.FONT_HERSHEY_SIMPLEX
+    # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)  # not required here anymore, because the frame is already in the cv2 format
+    for (top, right, bottom, left), face_name in zip(face_locations, face_names):
+        if resize_factor != 1:
+            top *= resize_factor
+            right *= resize_factor
+            bottom *= resize_factor
+            left *= resize_factor
+        # save the unknown faces and do this before the rectangle is inserted in the frame
+        if face_name == unknown_face_name and save_unknown:
+            j = 0
+            while os.path.exists(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg'):
+                j += 1
+            cv2.imwrite(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg', frame[top - border:bottom + border, left - border:right + border])  # only save the face with a border -> crop image using numphy
+        # draw a box around the face
+        cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
+        # draw a box above the face
+        cv2.rectangle(frame, (left, top - 25), (left + 200, top), (0, 255, 255), -1)
+        cv2.putText(frame, face_name, (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX, .75, (255, 0, 0), 2)
+    return image
+
+
 def draw_bounding_boxes(image, obj_meta, confidence):
     confidence = '{0:.2f}'.format(confidence)
     rect_params = obj_meta.rect_params
@@ -167,6 +217,15 @@ def draw_bounding_boxes(image, obj_meta, confidence):
     image = cv2.rectangle(image, (left, top), (left + width, top + height), (0, 0, 255, 0), 2)
     # Note that on some systems cv2.putText erroneously draws horizontal lines across the image
     image = cv2.putText(image, obj_name + ', C=' + str(confidence), (left - 10, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255, 0), 2)
+    if obj_meta.class_id == PGIE_CLASS_ID_PERSON:
+        # this is a person, let's see if we know this person
+        face_recog(image, obj_meta)
+    elif obj_meta.class_id == PGIE_CLASS_ID_VEHICLE:
+        # this is a vehicle, let's see if we can find a license plate
+        print('Vehicle detected, but no function yet to check his license plate')
+    else:
+        # some other object, do nothing
+        print('Object detected, but it is not a person or a vehicle')
     return image
 
 
@@ -255,8 +314,29 @@ def main(args):
         sys.stderr.write("The output folder %s already exists. Please remove it first.\n" % folder_name)
         sys.exit(1)
 
+    # start logging and counter and create directory for any unknow faces just in case we find any
+    global log
+    logpath = Path(logdir)
+    logpath.mkdir(parents=True, exist_ok=True)
+    log = init_log(logfile, process, loglevel, logsize, logbackups)
+    log.critical('Starting program: %s with OpenCv version %s in %s mode and saving unknow face: %s' % (process, cv2.__version__, 'Screen' if gui else 'Headless', 'On' if save_unknown else 'Off'))
+    starttime = time.perf_counter()
+    unknow_faces_path = Path(unknow_face_dir)
+    unknow_faces_path.mkdir(parents=True, exist_ok=True)
+
+    # opening learned faces file
+    global Names
+    global Sequence
+    global Encodings
+    log.info(f'- Opening learned faces file: {learnedfile}')
+    with open(learnedfile, 'rb') as trainedfacesfile:
+        # reading the learned faces file
+        Names = pickle.load(trainedfacesfile)
+        Sequence = pickle.load(trainedfacesfile)
+        Encodings = pickle.load(trainedfacesfile)
+
     os.mkdir(folder_name)
-    print("Frames will be saved in ", folder_name)
+    log.warning(f'Frames will be saved in: {folder_name}')
     # Standard GStreamer initialization
     GObject.threads_init()
     Gst.init(None)
