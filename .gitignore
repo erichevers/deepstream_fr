@@ -1,0 +1,6 @@
+.idea
+Info
+.DS_Store
+.vscode
+logdir/*
+deepstream_fr.code-workspace
