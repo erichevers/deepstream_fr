@@ -1,6 +1,6 @@
 FROM nvcr.io/nvidia/deepstream-l4t:5.0.1-20.09-samples
 # this is the deepstream version with the samples.
-WORKDIR /opt/nvidia/deepstream/deepstream-5.0/sources
+# WORKDIR /opt/nvidia/deepstream/deepstream-5.0/sources
 # upgrade stuff and install required programs
 RUN apt-get -y update && \
     apt-get -y upgrade && \

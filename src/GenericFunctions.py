@@ -5,9 +5,7 @@
 
 # imports
 from datetime import datetime      # to use date and time for timestamp
-import json
 import logging
-import os
 from logging.handlers import RotatingFileHandler
 
 

@@ -1,0 +1,182 @@
+FROM nvcr.io/nvidia/deepstream-l4t:5.0.1-20.09-samples
+# this is the deepstream version with the samples.
+WORKDIR /opt/nvidia/deepstream/deepstream-5.0/sources
+# upgrade stuff and install required programs
+RUN apt-get -y update && \
+    apt-get -y upgrade && \
+    apt-get -y install python3-pip && \
+    # install Gst-python
+    apt-get -y install python3-gi python3-dev python3-gst-1.0 && \
+    # install additional items
+    apt-get install -y --no-install-recommends \
+    wget \
+    cmake \
+    unzip \
+    curl \
+    iputils-ping \
+    nano
+# download and compile dlib and OpenCV with CUDA
+ARG OPENCV_VERSION=4.5.0
+RUN cd /opt/nvidia && \
+    # show cuda version
+    nvcc --version && \
+    apt-get install -y \
+    # python3-pip \
+    libjpeg-dev \
+    libopenblas-base \
+    libopenblas-dev \
+    liblapack-dev \
+    # and the following just to be sure for opencv2 install
+    ffmpeg \
+    libtbb2 \
+    gfortran \
+    apt-utils \
+    pkg-config \
+    checkinstall \
+    qt5-default \
+    build-essential \
+    libopenblas-base \
+    libopenblas-dev \
+    liblapack-dev \
+    libatlas-base-dev \
+    libgtk-3-dev \
+    # libavcodec58 this one seems to not exist
+    libavcodec-dev \
+    # libavformat58 this one seems to not exist
+    libavformat-dev \
+    libavutil-dev \
+    # libswscale5 this one seems not to exist
+    libswscale-dev \
+    libjpeg8-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libdc1394-22 \
+    libdc1394-22-dev \
+    libxine2-dev \
+    libv4l-dev \
+    libgstreamer1.0 \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-0 \
+    libgstreamer-plugins-base1.0-dev \
+    libglew-dev \
+    libpostproc-dev \
+    libeigen3-dev \
+    libtbb-dev \
+    zlib1g-dev \
+    libsm6 \
+    libxext6 \
+    libxrender1 && \
+    # upgrade cuda
+    cd /opt/nvidia && \
+    mkdir cuda && cd cuda && \
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
+    mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
+    wget http://developer.download.nvidia.com/compute/cuda/11.0.2/local_installers/cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
+    dpkg -i cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
+    apt-key add /var/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
+    # it looks like the key is not set correctly, so let's try this
+    apt-key add /opt/nvidia/cuda/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
+    apt-get -y install cuda && \
+    nvcc --version
+# install dlib
+RUN cd /opt/nvidia && \
+    mkdir dlib && cd dlib && \
+    # wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
+    # tar jxvf dlib-19.21.tar.bz2 && \
+    wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip --progress=bar:force:noscroll && \
+    unzip dlib.zip && \
+    cd dlib-master && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    cmake --build . && \
+    cd ../ && \
+    python3 setup.py install && \
+    # OpenCV
+    cd /opt/nvidia && \
+    mkdir opencv && cd opencv && \
+    apt-get install -y \
+    # cmake wget unzip \
+    g++ && \
+    wget -O opencv.zip https://github.com/opencv/opencv/archive/$OPENCV_VERSION.zip -O opencv.zip --progress=bar:force:noscroll && \
+    wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/$OPENCV_VERSION.zip -O opencv_contrib.zip --progress=bar:force:noscroll && \
+	unzip opencv.zip && \
+    mv opencv-$OPENCV_VERSION opencv && \
+    rm opencv.zip && \
+	unzip opencv_contrib.zip && \
+    mv opencv_contrib-$OPENCV_VERSION opencv_contrib && \
+    rm opencv_contrib.zip && \
+	mkdir -p build && cd build && \
+	cmake \
+    	-D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules \
+        -D CMAKE_BUILD_TYPE=RELEASE \
+        -D CMAKE_INSTALL_PREFIX=/usr/local \
+        -D WITH_GTK=ON \
+        -D WITH_FFMPEG=ON \
+        -D WITH_GSTREAMER=ON \
+        -D WITH_CUDA=ON \
+        -D WITH_CUDNN=OFF \
+        -D CUDA_ARCH_BIN="5.3,6.2,7.2" \
+        -D CUDA_ARCH_PTX="" \
+        -D WITH_LIBV4L=ON \
+        -D BUILD_opencv_python3 \
+        -D BUILD_TESTS=OFF \
+        -D BUILD_PERF_TESTS=OFF \
+        -D BUILD_EXAMPLES=OFF \
+        ../opencv && \
+	# cmake --build . && \
+    make -j4 && \
+    make install && \
+    ldconfig
+    
+# install bindings for DeepStream Metadata libraries
+RUN cd /opt/nvidia/deepstream/deepstream/lib && \
+    python3 setup.py install && \
+    # and install other programs
+    apt-get install -y \
+    python3-numpy \
+    libgstrtspserver-1.0-0 gstreamer1.0-rtsp \
+    libgirepository1.0-dev \
+    gobject-introspection gir1.2-gst-rtsp-server-1.0 \
+    libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev \
+    libgstrtspserver-1.0-dev libx11-dev
+# install demo python apps
+RUN cd /opt/nvidia/deepstream/deepstream-5.0 && \
+    # sources dir is already part of the samples image but not in the base image: mkdir sources && \
+    cd sources && \
+    git clone https://github.com/NVIDIA-AI-IOT/deepstream_python_apps && \
+    cd .. && \
+    # make the gstreamer for python
+    cd /opt/nvidia/deepstream/deepstream-5.0/sources/deepstream_python_apps/apps/deepstream-test3 && \
+    apt-get -y install autoconf libtool libgstreamer1.0-dev python-gi-dev && \
+    export GST_LIBS="-lgstreamer-1.0 -lgobject-2.0 -lglib-2.0" && \
+    export GST_CFLAGS="-pthread -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include" && \
+    git clone https://github.com/GStreamer/gst-python.git && \
+    cd gst-python && \
+    git checkout 1a8f48a && \
+    ./autogen.sh PYTHON=python3 && \
+    ./configure PYTHON=python3 && \
+    make && \
+    make install && \
+    cd ..
+# and our own additions to allow python face recognition
+RUN apt-get install -y \
+    libhdf5-serial-dev \
+    hdf5-tools \
+    libhdf5-dev \
+    zlib1g-dev \
+    zip \
+    libjpeg8-dev \
+    liblapack-dev \
+    libblas-dev \
+    gfortran && \
+    pip3 install face_recognition
+# get our software ready and at the correct place
+WORKDIR /opt/nvidia/deepstream/deepstream-5.0/sources/deepstream_python_apps/apps/deepstream_fr
+COPY    ./src/ .
+RUN cd /opt/nvidia/deepstream/deepstream-5.0/sources/deepstream_python_apps/apps/deepstream_fr && \
+    mkdir logdir
+# Call default command and show what we have are running
+RUN python3 --version && \
+    python3 -c "import cv2 ; print(cv2.__version__)" && \
+    python3 -c "import cv2 ; print(cv2.getBuildInformation())"
