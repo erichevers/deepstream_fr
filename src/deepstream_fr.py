@@ -7,8 +7,10 @@
 
 # start with the imports
 import sys
+sys.path.append('../')
 import gi
 import configparser
+gi.require_version('Gst', '1.0')
 from gi.repository import GObject, Gst
 from gi.repository import GLib
 from ctypes import *
@@ -28,8 +30,6 @@ import face_recognition  # to load the face recognition libary
 import pickle            # to load the trained faces file
 from pathlib import Path  # to auto create directories
 from GenericFunctions import init_log
-sys.path.append('../')
-gi.require_version('Gst', '1.0')
 
 # initiate deepstream variables
 fps_streams = {}
