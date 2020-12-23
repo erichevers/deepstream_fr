@@ -59,14 +59,16 @@ logfile = logdir + process + '.log'
 loglevel = 'Info'
 logsize = 200000
 logbackups = 5
+global log
+log = None
 
 # other variables
 learnedfile = logdir + 'known_faces/trained_faces.pkl'
-unknow_face_dir = logdir + 'UnknownFaces/'
+unknow_face_dir = logdir + 'unknown_faces/'
 gui = True  # use the GUI as output to show the stream
 save_unknown = True  # save unknow faces
 unknown_face_name = 'Unknown'  # what name to use when the face is not recognized
-sampling_rate = 5   # process every X frames in a stream i.e. sampling_rate of 2 will process every other frame, 4 will 1 frame of 4 etc
+sampling_rate = 20   # process every X frames in a stream i.e. sampling_rate of 2 will process every other frame, 4 will 1 frame of 4 etc
 resize_factor = 2   # to resize the video stream, set to 4 for high quality streams (> 1920x1080:24fps) to shrink the resolution for better performance
 up_scale = 2     # This finds faces better when they are small (1 = standard, 3 & 4 is slow)
 detection_model = 'hog'  # this is the model that is used for face recognition: models can be "hog", "cnn". cnn is more accurate, but takes longer
@@ -83,7 +85,9 @@ global Sequence
 Sequence = []
 global Encodings
 Encodings = []
-global log
+global folder_name
+folder_name = None
+
 
 # tiler_sink_pad_buffer_probe  will extract metadata received on tiler src pad
 # and update params for drawing rectangle, object information etc.
@@ -147,14 +151,16 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
                 save_image = True
                 frame_image = draw_bounding_boxes(frame_image, obj_meta, obj_meta.confidence)
             # save and draw box when we have a person
-            if obj_meta.class_id == PGIE_CLASS_ID_PERSON and frame_meta.pad_index % 30 == 0:
+            if obj_meta.class_id == PGIE_CLASS_ID_PERSON and frame_meta.pad_index % sampling_rate == 0:
+                # only do face recognition if the object is a person and once in a while depending on the sampling rate
                 # Getting Image data using nvbufsurface
                 # the input should be address of buffer and batch_id
                 n_frame = pyds.get_nvds_buf_surface(hash(gst_buffer), frame_meta.batch_id)
                 # convert python array into numpy array format.
                 frame_image = np.array(n_frame, copy=True, order='C')
-                # covert the array into cv2 default color format
-                frame_image = cv2.cvtColor(frame_image, cv2.COLOR_RGBA2BGRA)
+                # it looks like the image coming from the buffer includes alpha channel and is in RGB,
+                # face recognition also uses RGB, but may be not with alpha channel, so let's remove this to be sure and remove next line if alpha channel is OK
+                frame_image = cv2.cvtColor(frame_image, cv2.COLOR_RGBA2RGB)
                 frame_image = draw_bounding_boxes(frame_image, obj_meta, obj_meta.confidence)
                 save_image = True
             # continue with the next object when there is one
@@ -201,7 +207,7 @@ def face_recog(image, obj_meta):
             log.info('-- Unknown face detected')
         else:
             log.info(f'-- Known face detected: {name}')
-    
+
     # display the results
     cvfont = cv2.FONT_HERSHEY_SIMPLEX
     # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)  # not required here anymore, because the frame is already in the cv2 format
@@ -237,14 +243,15 @@ def draw_bounding_boxes(image, obj_meta, confidence):
     # Note that on some systems cv2.putText erroneously draws horizontal lines across the image
     image = cv2.putText(image, obj_name + ', C=' + str(confidence), (left - 10, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255, 0), 2)
     if obj_meta.class_id == PGIE_CLASS_ID_PERSON:
-        # this is a person, let's see if we know this person
-        face_recog(image, obj_meta)
+        # this is a person, let's see if we know this person and draw a box around the face
+        # TODO: May be we should crop the image to the size of the object to optimize speed, but let's use the complete image for now
+        image = face_recog(image, obj_meta)
     elif obj_meta.class_id == PGIE_CLASS_ID_VEHICLE:
         # this is a vehicle, let's see if we can find a license plate
-        print('Vehicle detected, but no function yet to check his license plate')
+        log.info('-- Vehicle detected, but no function yet to check his license plate')
     else:
         # some other object, do nothing
-        print('Object detected, but it is not a person or a vehicle')
+        log.info('-- Object detected, but it is not a person or a vehicle')
     return image
 
 
@@ -327,7 +334,6 @@ def main(args):
         fps_streams["stream{0}".format(i)] = GETFPS(i)
     number_sources = len(args) - 2
 
-    global folder_name
     folder_name = args[-1]
     if path.exists(folder_name):
         sys.stderr.write("The output folder %s already exists. Please remove it first.\n" % folder_name)
