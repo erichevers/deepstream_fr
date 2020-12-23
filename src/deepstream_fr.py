@@ -162,7 +162,6 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
                 # face recognition also uses RGB, but may be not with alpha channel, so let's remove this to be sure and remove next line if alpha channel is OK
                 frame_image = cv2.cvtColor(frame_image, cv2.COLOR_RGBA2RGB)
                 frame_image = draw_bounding_boxes(frame_image, obj_meta, obj_meta.confidence)
-                save_image = True
             # continue with the next object when there is one
             try:
                 l_obj = l_obj.next
@@ -173,7 +172,7 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
         # Get frame rate through this probe
         fps_streams["stream{0}".format(frame_meta.pad_index)].get_fps()
         if save_image:
-            cv2.imwrite(folder_name + "/stream_" + str(frame_meta.pad_index) + "/frame_" + str(frame_number) + ".jpg", frame_image)
+            cv2.imwrite(f'{folder_name}/stream_{frame_meta.pad_index}/frame_{frame_number}.jpg', frame_image)
         saved_count["stream_" + str(frame_meta.pad_index)] += 1
         try:
             l_frame = l_frame.next
