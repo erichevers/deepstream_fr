@@ -158,9 +158,6 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
                 n_frame = pyds.get_nvds_buf_surface(hash(gst_buffer), frame_meta.batch_id)
                 # convert python array into numpy array format.
                 frame_image = np.array(n_frame, copy=True, order='C')
-                # it looks like the image coming from the buffer includes alpha channel and is in RGB,
-                # face recognition also uses RGB, but may be not with alpha channel, so let's remove this to be sure and remove next line if alpha channel is OK
-                frame_image = cv2.cvtColor(frame_image, cv2.COLOR_RGBA2RGB)
                 frame_image = draw_bounding_boxes(frame_image, obj_meta, obj_meta.confidence)
             # continue with the next object when there is one
             try:
@@ -183,8 +180,20 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
 
 def face_recog(image, obj_meta):
     # Find all the faces and face encodings in the current frame of video
-    rgb_small_frame = image
-    frame = image
+    obj_coordinates = obj_meta.rect_params
+    obj_top = int(obj_coordinates.top)
+    obj_left = int(obj_coordinates.left)
+    obj_bottom = obj_top - int(obj_coordinates.height)
+    obj_right = obj_left + int(obj_coordinates.width)
+    # Resize frame of video for faster face recognition processing, when required
+    if resize_factor == 1:
+        small_frame = image[obj_top - border:obj_bottom + border, obj_left - border:obj_right + border]  # only take the object part from the image for faster recognition
+    else:
+        small_frame = cv2.resize(image[obj_top - border:obj_bottom + border, obj_left - border:obj_right + border], (0, 0), fx=1 / resize_factor, fy=1 / resize_factor)  # and resize it even further when asked
+    # The image coming from the buffer includes alpha channel and is in RGB,
+    # face recognition also uses RGB, but may be not with alpha channel, so let's remove this to be sure and remove next line if alpha channel is OK to use
+    rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_RGBA2RGB)
+    # now find locations of any face in the image
     face_locations = face_recognition.face_locations(rgb_small_frame, number_of_times_to_upsample=up_scale, model=detection_model)
     if face_locations:
         log.info(f'--- Number of faces found in image: {len(face_locations)}')
@@ -208,25 +217,32 @@ def face_recog(image, obj_meta):
             log.info(f'-- Known face detected: {name}')
 
     # display the results
-    cvfont = cv2.FONT_HERSHEY_SIMPLEX
-    # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)  # not required here anymore, because the frame is already in the cv2 format
-    for (top, right, bottom, left), face_name in zip(face_locations, face_names):
-        if resize_factor != 1:
-            top *= resize_factor
-            right *= resize_factor
-            bottom *= resize_factor
-            left *= resize_factor
-        # save the unknown faces and do this before the rectangle is inserted in the frame
-        if face_name == unknown_face_name and save_unknown:
-            j = 0
-            while os.path.exists(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg'):
-                j += 1
-            cv2.imwrite(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg', frame[top - border:bottom + border, left - border:right + border])  # only save the face with a border -> crop image using numphy
-        # draw a box around the face
-        cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
-        # draw a box above the face
-        cv2.rectangle(frame, (left, top - 25), (left + 200, top), (0, 255, 255), -1)
-        cv2.putText(frame, face_name, (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX, .75, (255, 0, 0), 2)
+    if face_names:
+        frame = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # the image coming from the pipeline is RGB, and OpenCV is in BGR so we need to convert the image
+        for (top, right, bottom, left), face_name in zip(face_locations, face_names):
+            if resize_factor != 1:
+                top *= resize_factor
+                right *= resize_factor
+                bottom *= resize_factor
+                left *= resize_factor
+            # adjust the location of the face because we cropped the full image to the object, but need the rectangle on the full image
+            top = obj_top + top
+            right = obj_right - right
+            bottom = obj_bottom - bottom
+            left = obj_left + left
+            # save the unknown faces and do this before the rectangle is inserted in the frame
+            if face_name == unknown_face_name and save_unknown:
+                j = 0
+                while os.path.exists(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg'):
+                    j += 1
+                cv2.imwrite(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg', frame[top - border:bottom + border, left - border:right + border])  # only save the face with a border -> crop image using numphy
+            # draw a box around the face
+            cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
+            # draw a box above the face
+            cv2.rectangle(frame, (left, top - 25), (left + 200, top), (0, 255, 255), -1)
+            cv2.putText(frame, face_name, (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX, .75, (255, 0, 0), 2)
+            # write updated image back in the pipeline format (RBGA) when there are any faces and at the location on the image, not the cropped object
+        image = cv2.cvtColor(frame, cv2.COLOR_BGRA2RBGA)
     return image
 
 
@@ -238,12 +254,11 @@ def draw_bounding_boxes(image, obj_meta, confidence):
     width = int(rect_params.width)
     height = int(rect_params.height)
     obj_name = pgie_classes_str[obj_meta.class_id]
-    image = cv2.rectangle(image, (left, top), (left + width, top + height), (0, 0, 255, 0), 2)
+    image = cv2.rectangle(image, (left, top), (left + width, top + height), (0, 0, 255, 0), 2)  # TODO: i think the example is false and should be top - height. but let's see
     # Note that on some systems cv2.putText erroneously draws horizontal lines across the image
     image = cv2.putText(image, obj_name + ', C=' + str(confidence), (left - 10, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255, 0), 2)
     if obj_meta.class_id == PGIE_CLASS_ID_PERSON:
         # this is a person, let's see if we know this person and draw a box around the face
-        # TODO: May be we should crop the image to the size of the object to optimize speed, but let's use the complete image for now
         image = face_recog(image, obj_meta)
     elif obj_meta.class_id == PGIE_CLASS_ID_VEHICLE:
         # this is a vehicle, let's see if we can find a license plate
@@ -504,12 +519,14 @@ def main(args):
         tiler_sink_pad.add_probe(Gst.PadProbeType.BUFFER, tiler_sink_pad_buffer_probe, 0)
 
     # List the sources
-    print("Now playing...")
+    log.info(f'- Now playing...')
     for i, source in enumerate(args[:-1]):
         if (i != 0):
-            print(i, ": ", source)
+            log.info(f'- {i}: {source}')
 
-    print("Starting pipeline \n")
+    log.info(f'- Starting pipeline and processing with sampling rate: {sampling_rate}, resize factor: {resize_factor} and up scale: {up_scale}')
+    log.info(f'- Facial recognition is done with detection model: {detection_model}, number of jitters: {number_jitters} and encoding model: {encoding_model}')
+
     # start play back and listed to events
     pipeline.set_state(Gst.State.PLAYING)
     try:
