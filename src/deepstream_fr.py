@@ -182,7 +182,7 @@ def face_recog(image, obj_meta):
     obj_coordinates = obj_meta.rect_params
     obj_top = int(obj_coordinates.top)
     obj_left = int(obj_coordinates.left)
-    obj_bottom = obj_top - int(obj_coordinates.height)
+    obj_bottom = obj_top + int(obj_coordinates.height)
     obj_right = obj_left + int(obj_coordinates.width)
     log.info(f'--- Object located at location top: {obj_top}, left: {obj_left}, bottom: {obj_bottom}, right: {obj_right}')
     # Resize frame of video for faster face recognition processing, when required
@@ -227,9 +227,9 @@ def face_recog(image, obj_meta):
                 left *= resize_factor
             # adjust the location of the face because we cropped the full image to the object, but need the rectangle on the full image
             top = obj_top + top
-            right = obj_right - right
-            bottom = obj_bottom - bottom
             left = obj_left + left
+            bottom = obj_top + bottom
+            right = obj_left + right
             # save the unknown faces and do this before the rectangle is inserted in the frame
             if face_name == unknown_face_name and save_unknown:
                 j = 0
@@ -268,7 +268,7 @@ def add_confidence_box(image, obj_meta, confidence):
     width = int(rect_params.width)
     height = int(rect_params.height)
     obj_name = pgie_classes_str[obj_meta.class_id]
-    image = cv2.rectangle(image, (left, top), (left + width, top + height), (0, 0, 255, 0), 2)  # TODO: i think the example is false and should be top - height. but let's see
+    image = cv2.rectangle(image, (left, top), (left + width, top + height), (0, 0, 255, 0), 2)
     # Note that on some systems cv2.putText erroneously draws horizontal lines across the image
     image = cv2.putText(image, obj_name + ', C=' + str(confidence), (left - 10, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255, 0), 2)
     log.info(f'-- Adding box for: {obj_name}, with confidence: {confidence} at location top: {top}, left: {left}, bottom: {top + height}, right: {left + width}')
@@ -409,7 +409,7 @@ def main(args):
         log.critical('Error: Unable to create NvStreamMux')
     pipeline.add(streammux)
     for i in range(number_sources):
-        log.info(f'Creating source_bin: {folder_name}/stream_{i}')
+        log.info(f'- Creating source_bin: {folder_name}/stream_{i}')
         stream_path = Path(f'{folder_name}/stream_{i}')
         stream_path.mkdir(parents=True, exist_ok=True)
         frame_count["stream_" + str(i)] = 0
@@ -424,10 +424,10 @@ def main(args):
         padname = "sink_%u" % i
         sinkpad = streammux.get_request_pad(padname)
         if not sinkpad:
-            log.critical('Unable to create sink pad bin')
+            log.critical('Error: Unable to create sink pad bin')
         srcpad = source_bin.get_static_pad("src")
         if not srcpad:
-            log.critical('Unable to create src pad bin')
+            log.critical('Error: Unable to create src pad bin')
         srcpad.link(sinkpad)
 
     log.warning('- Creating Pgie')
@@ -437,7 +437,7 @@ def main(args):
 
     # Add nvvidconv1 and filter1 to convert the frames to RGBA
     # which is easier to work with in Python.
-    log.warning('Creating nvvidconv1 and filter1 to convert frames to RGBA')
+    log.warning('- Creating nvvidconv1 and filter1 to convert frames to RGBA')
     nvvidconv1 = Gst.ElementFactory.make("nvvideoconvert", "convertor1")
     if not nvvidconv1:
         log.critical('Error: Unable to create nvvidconv1')
