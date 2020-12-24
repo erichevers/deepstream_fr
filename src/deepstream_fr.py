@@ -69,9 +69,8 @@ unknow_face_dir = logdir + 'unknown_faces/'
 gui = True  # use the GUI as output to show the stream
 save_unknown = True  # save unknow faces
 unknown_face_name = 'Unknown'  # what name to use when the face is not recognized
-sampling_rate = 20   # process every X frames in a stream i.e. sampling_rate of 2 will process every other frame, 4 will 1 frame of 4 etc
-# TODO: resize factor should be 2
-resize_factor = 1   # to resize the video stream, set to 4 for high quality streams (> 1920x1080:24fps) to shrink the resolution for better performance
+sampling_rate = 30   # process every X frames in a stream i.e. sampling_rate of 2 will process every other frame, 4 will 1 frame of 4 etc
+resize_factor = 2   # to resize the video stream, set to 4 for high quality streams (> 1920x1080:24fps) to shrink the resolution for better performance
 up_scale = 2     # This finds faces better when they are small (1 = standard, 3 & 4 is slow)
 detection_model = 'hog'  # this is the model that is used for face recognition: models can be "hog", "cnn". cnn is more accurate, but takes longer
 number_jitters = 1             # How many times to re-sample the face when calculating encoding. Higher is more accurate, but slower (i.e. 100 is 100x slower)
@@ -136,7 +135,7 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
             # If such detections are found, annoate the frame with bboxes and confidence value.
             # Save the annotated frame to file.
             # The below proces will be rewritten later, but we keep it in for reference
-            if((saved_count["stream_" + str(frame_meta.pad_index)] % 30 == 0) and (obj_meta.confidence > 0.3 and obj_meta.confidence < 0.31)):
+            if((saved_count["stream_" + str(frame_meta.pad_index)] % sampling_rate == 0) and (obj_meta.confidence > 0.3 and obj_meta.confidence < 0.31)):
                 if is_first_obj:
                     is_first_obj = False
                     # Getting Image data using nvbufsurface
@@ -146,8 +145,7 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
                     frame_image = np.array(n_frame, copy=True, order='C')
                     # covert the array into cv2 default color format
                     frame_image = cv2.cvtColor(frame_image, cv2.COLOR_RGBA2BGRA)
-
-                # save_image = True  # TODO: Don't save images for now
+                save_image = True
                 frame_image = add_confidence_box(frame_image, obj_meta, obj_meta.confidence)
             # save and draw box when we have a person
             if frame_meta.pad_index % sampling_rate == 0:
@@ -164,7 +162,7 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
             except StopIteration:
                 break
 
-        log.info(f'Frame Number: {frame_number}, Number of Objects: {num_rects}, Vehicle_count: {obj_counter[PGIE_CLASS_ID_VEHICLE]}, Person_count={obj_counter[PGIE_CLASS_ID_PERSON]}')
+        log.info(f'- Frame Number: {frame_number}, Number of Objects: {num_rects}, Vehicle_count: {obj_counter[PGIE_CLASS_ID_VEHICLE]}, Person_count={obj_counter[PGIE_CLASS_ID_PERSON]}')
         # Get frame rate through this probe
         fps_streams["stream{0}".format(frame_meta.pad_index)].get_fps()
         if save_image:
