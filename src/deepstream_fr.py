@@ -468,7 +468,7 @@ def main(args):
         if not transform:
             log.critical('Error: Unable to create transform')
 
-    log.warningp('- Creating EGLSink')
+    log.warning('- Creating EGLSink')
     sink = Gst.ElementFactory.make("nveglglessink", "nvvideo-renderer")
     if not sink:
         log.critical('Error: Unable to create egl sink')
