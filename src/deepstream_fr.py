@@ -379,8 +379,9 @@ def main(args):
         Names = pickle.load(trainedfacesfile)
         global Sequence
         Sequence = pickle.load(trainedfacesfile)
-        global Filedate
-        Filedate = pickle.load(trainedfacesfile)
+        # TODO: Create updated learned faces file
+        # global Filedate
+        # Filedate = pickle.load(trainedfacesfile)
         global Encodings
         Encodings = pickle.load(trainedfacesfile)
 
