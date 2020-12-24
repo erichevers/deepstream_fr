@@ -409,10 +409,11 @@ def main(args):
         log.critical('Error: Unable to create NvStreamMux')
     pipeline.add(streammux)
     for i in range(number_sources):
-        os.mkdir(folder_name + "/stream_" + str(i))
+        log.info(f'Creating source_bin: {folder_name}/stream_{i}')
+        stream_path = Path(f'{folder_name}/stream_{i}')
+        stream_path.mkdir(parents=True, exist_ok=True)
         frame_count["stream_" + str(i)] = 0
         saved_count["stream_" + str(i)] = 0
-        log.info(f'Creating source_bin {i}')
         uri_name = args[i + 1]
         if uri_name.find("rtsp://") == 0:
             is_live = True
