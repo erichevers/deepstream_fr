@@ -67,7 +67,7 @@ known_faces_logfile = known_faces_dir + 'known_faces.log'
 known_faces_log = logging.NOTSET
 
 # other variables
-learnedfile = known_face_dir + 'trained_faces.pkl'
+learnedfile = known_faces_dir + 'trained_faces.pkl'
 gui = True  # use the GUI as output to show the stream
 save_unknown = True  # save unknow faces
 save_object = True  # save unknown face as object (True) or face only (False)
