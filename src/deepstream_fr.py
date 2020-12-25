@@ -68,6 +68,7 @@ learnedfile = logdir + 'known_faces/trained_faces.pkl'
 unknow_face_dir = logdir + 'unknown_faces/'
 gui = True  # use the GUI as output to show the stream
 save_unknown = True  # save unknow faces
+save_object = True  # save unknown face as object (True) or face only (False)
 unknown_face_name = 'Unknown'  # what name to use when the face is not recognized
 sampling_rate = 30   # process every X frames in a stream i.e. sampling_rate of 2 will process every other frame, 4 will 1 frame of 4 etc
 resize_factor = 2   # to resize the video stream, set to 4 for high quality streams (> 1920x1080:24fps) to shrink the resolution for better performance
@@ -178,16 +179,17 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
 def face_recog(image, obj_meta):
     # Find all the faces and face encodings in the current frame of video
     obj_coordinates = obj_meta.rect_params
-    obj_top = int(obj_coordinates.top)
-    obj_left = int(obj_coordinates.left)
-    obj_bottom = obj_top + int(obj_coordinates.height)
-    obj_right = obj_left + int(obj_coordinates.width)
+    # include border around object, but make sure we stay within the image border
+    obj_top = int(obj_coordinates.top) - border if (int(obj_coordinates.top) - border) < 0 else 0
+    obj_left = int(obj_coordinates.left) - border if (int(obj_coordinates.left) - border) < 0 else 0
+    obj_bottom = obj_top + int(obj_coordinates.height) + border if (obj_top + int(obj_coordinates.height) + border) < TILED_OUTPUT_HEIGHT else TILED_OUTPUT_HEIGHT
+    obj_right = obj_left + int(obj_coordinates.width) + border if (obj_top + int(obj_coordinates.width) + border) < TILED_OUTPUT_WIDTH else TILED_OUTPUT_WIDTH
     log.info(f'--- Object located at location top: {obj_top}, left: {obj_left}, bottom: {obj_bottom}, right: {obj_right}')
     # Resize frame of video for faster face recognition processing, when required
     if resize_factor == 1:
-        small_frame = image[obj_top - border:obj_bottom + border, obj_left - border:obj_right + border]  # only take the object part from the image for faster recognition
+        small_frame = image[obj_top:obj_bottom, obj_left:obj_right]  # only take the object part from the image for faster recognition
     else:
-        small_frame = cv2.resize(image[obj_top - border:obj_bottom + border, obj_left - border:obj_right + border], (0, 0), fx=1 / resize_factor, fy=1 / resize_factor)  # and resize it even further when asked
+        small_frame = cv2.resize(image[obj_top:obj_bottom, obj_left:obj_right], (0, 0), fx=1 / resize_factor, fy=1 / resize_factor)  # and resize it even further when asked
     # The image coming from the buffer includes alpha channel and is in RGB,
     # face recognition also uses RGB, but may be not with alpha channel, so let's remove this to be sure and remove next line if alpha channel is OK to use
     rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_RGBA2RGB)
@@ -233,7 +235,14 @@ def face_recog(image, obj_meta):
                 j = 0
                 while os.path.exists(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg'):
                     j += 1
-                cv2.imwrite(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg', frame[top - border:bottom + border, left - border:right + border])  # only save the face with a border -> crop image using numphy
+                if save_object:
+                    # save the object
+                    cv2.imwrite(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg', frame[obj_top:obj_bottom, obj_left:obj_right])
+                else:
+                    # only save the face with a border -> crop image using numphy
+                    cv2.imwrite(
+                        f'{unknow_face_dir}{unknown_face_filename}{j}.jpg',
+                        frame[top - border if top - border > 0 else 0: bottom + border if bottom + border < TILED_OUTPUT_HEIGHT else TILED_OUTPUT_HEIGHT, left - border if left - border > 0 else 0: right + border if right + border < TILED_OUTPUT_WIDTH else TILED_OUTPUT_WIDTH])
             # draw a box around the face
             log.info(f'-- Adding box for: {face_name}, at location top: {top}, left: {left}, bottom: {bottom}, right: {right}')
             cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
