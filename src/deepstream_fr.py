@@ -54,7 +54,7 @@ GST_CAPS_FEATURES_NVMM = "memory:NVMM"
 pgie_classes_str = ["Vehicle", "TwoWheeler", "Person", "RoadSign"]
 
 # logging variables
-process = 'Deepstream_fr'
+process = 'deepstream_fr'
 logdir = 'logdir/'
 logfile = logdir + process + '.log'
 loglevel = 'Info'
@@ -62,8 +62,8 @@ logsize = 200000
 logbackups = 5
 log = logging.NOTSET
 unknown_face_dir = logdir + 'unknown_faces/'
-known_face_dir = logdir + 'known_faces/'
-known_faces_logfile = known_face_dir + 'known_faces.log'
+known_faces_dir = logdir + 'known_faces/'
+known_faces_logfile = known_faces_dir + 'known_faces.log'
 known_faces_log = logging.NOTSET
 
 # other variables
@@ -72,8 +72,8 @@ gui = True  # use the GUI as output to show the stream
 save_unknown = True  # save unknow faces
 save_object = True  # save unknown face as object (True) or face only (False)
 unknown_face_name = 'Unknown'  # what name to use when the face is not recognized
-sampling_rate = 30   # process every X frames in a stream i.e. sampling_rate of 2 will process every other frame, 4 will 1 frame of 4 etc
-resize_factor = 2   # to resize the video stream, set to 4 for high quality streams (> 1920x1080:24fps) to shrink the resolution for better performance
+sampling_rate = 20   # process every X frames in a stream i.e. sampling_rate of 2 will process every other frame, 4 will 1 frame of 4 etc
+resize_factor = 1   # to resize the video stream, set to 4 for high quality streams (> 1920x1080:24fps) to shrink the resolution for better performance
 up_scale = 2     # This finds faces better when they are small (1 = standard, 3 & 4 is slow)
 detection_model = 'hog'  # this is the model that is used for face recognition: models can be "hog", "cnn". cnn is more accurate, but takes longer
 number_jitters = 1             # How many times to re-sample the face when calculating encoding. Higher is more accurate, but slower (i.e. 100 is 100x slower)
@@ -86,7 +86,7 @@ transcoder = cv2.CAP_FFMPEG  # cv2.CAP_V4L cv2.CAP_V4L2 cv2.CAP_DC1394 cv2.CAP_G
 Names = []
 Sequence = []
 Encodings = []
-folder_name = logdir + '/frames'
+folder_name = logdir + 'frames'
 
 
 # tiler_sink_pad_buffer_probe  will extract metadata received on tiler src pad
@@ -303,9 +303,9 @@ def cb_newpad(decodebin, decoder_src_pad, data):
             # Get the source bin ghost pad
             bin_ghost_pad = source_bin.get_static_pad("src")
             if not bin_ghost_pad.set_target(decoder_src_pad):
-                sys.stderr.write("Failed to link decoder src pad to source bin ghost pad\n")
+                log.critical('Error: Failed to link decoder src pad to source bin ghost pad')
         else:
-            sys.stderr.write(" Error: Decodebin did not pick nvidia decoder plugin.\n")
+            log.critical('Error: Decodebin did not pick nvidia decoder plugin')
 
 
 def decodebin_child_added(child_proxy, Object, name, user_data):
@@ -381,10 +381,10 @@ def main(args):
     unknown_faces_path.mkdir(parents=True, exist_ok=True)
     # create logfile to store known faces detected
     global known_faces_log
-    unknown_faces_logpath = Path(known_face_dir)
-    unknown_faces_logpath.mkdir(parents=True, exist_ok=True)
-    known_faces_log = init_log(known_faces_logfile, process, loglevel, logsize, logbackups)
-    known_faces_log.critical('Starting program {process}')
+    known_faces_logpath = Path(known_faces_dir)
+    known_faces_logpath.mkdir(parents=True, exist_ok=True)
+    known_faces_log = init_log(known_faces_logfile, 'known_faces', loglevel, logsize, logbackups)
+    known_faces_log.critical('Start logging known faces')
 
     # opening learned faces file
     log.info(f'- Opening learned faces file: {learnedfile}')
