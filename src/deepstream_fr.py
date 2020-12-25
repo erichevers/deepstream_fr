@@ -61,11 +61,13 @@ loglevel = 'Info'
 logsize = 200000
 logbackups = 5
 log = logging.NOTSET
-
+unknown_face_dir = logdir + 'unknown_faces/'
+known_face_dir = logdir + 'known_faces/'
+known_faces_logfile = known_face_dir + 'known_faces.log'
+known_faces_log = logging.NOTSET
 
 # other variables
-learnedfile = logdir + 'known_faces/trained_faces.pkl'
-unknow_face_dir = logdir + 'unknown_faces/'
+learnedfile = known_face_dir + 'trained_faces.pkl'
 gui = True  # use the GUI as output to show the stream
 save_unknown = True  # save unknow faces
 save_object = True  # save unknown face as object (True) or face only (False)
@@ -94,7 +96,7 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
     num_rects = 0
     gst_buffer = info.get_buffer()
     if not gst_buffer:
-        print("Unable to get GstBuffer ")
+        log.critical('Error: Unable to get GstBuffer')
         return
 
     # Retrieve batch metadata from the gst_buffer
@@ -180,8 +182,8 @@ def face_recog(image, obj_meta):
     # Find all the faces and face encodings in the current frame of video
     obj_coordinates = obj_meta.rect_params
     # include border around object, but make sure we stay within the image border
-    obj_top = int(obj_coordinates.top) - border if (int(obj_coordinates.top) - border) < 0 else 0
-    obj_left = int(obj_coordinates.left) - border if (int(obj_coordinates.left) - border) < 0 else 0
+    obj_top = int(obj_coordinates.top) - border if (int(obj_coordinates.top) - border) > 0 else 0
+    obj_left = int(obj_coordinates.left) - border if (int(obj_coordinates.left) - border) > 0 else 0
     obj_bottom = obj_top + int(obj_coordinates.height) + border if (obj_top + int(obj_coordinates.height) + border) < TILED_OUTPUT_HEIGHT else TILED_OUTPUT_HEIGHT
     obj_right = obj_left + int(obj_coordinates.width) + border if (obj_top + int(obj_coordinates.width) + border) < TILED_OUTPUT_WIDTH else TILED_OUTPUT_WIDTH
     log.info(f'--- Object located at location top: {obj_top}, left: {obj_left}, bottom: {obj_bottom}, right: {obj_right}')
@@ -215,6 +217,7 @@ def face_recog(image, obj_meta):
             log.info('-- Unknown face detected')
         else:
             log.info(f'-- Known face detected: {name}')
+            known_faces_log.info(f'- Known face detected: {name}')
 
     # display the results
     if face_names:
@@ -233,15 +236,15 @@ def face_recog(image, obj_meta):
             # save the unknown faces and do this before the rectangle is inserted in the frame
             if face_name == unknown_face_name and save_unknown:
                 j = 0
-                while os.path.exists(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg'):
+                while os.path.exists(f'{unknown_face_dir}{unknown_face_filename}{j}.jpg'):
                     j += 1
                 if save_object:
                     # save the object
-                    cv2.imwrite(f'{unknow_face_dir}{unknown_face_filename}{j}.jpg', frame[obj_top:obj_bottom, obj_left:obj_right])
+                    cv2.imwrite(f'{unknown_face_dir}{unknown_face_filename}{j}.jpg', frame[obj_top:obj_bottom, obj_left:obj_right])
                 else:
                     # only save the face with a border -> crop image using numphy
                     cv2.imwrite(
-                        f'{unknow_face_dir}{unknown_face_filename}{j}.jpg',
+                        f'{unknown_face_dir}{unknown_face_filename}{j}.jpg',
                         frame[top - border if top - border > 0 else 0: bottom + border if bottom + border < TILED_OUTPUT_HEIGHT else TILED_OUTPUT_HEIGHT, left - border if left - border > 0 else 0: right + border if right + border < TILED_OUTPUT_WIDTH else TILED_OUTPUT_WIDTH])
             # draw a box around the face
             log.info(f'-- Adding box for: {face_name}, at location top: {top}, left: {left}, bottom: {bottom}, right: {right}')
@@ -283,7 +286,7 @@ def add_confidence_box(image, obj_meta, confidence):
 
 
 def cb_newpad(decodebin, decoder_src_pad, data):
-    print("In cb_newpad\n")
+    log.info('- In cb_newpad')
     caps = decoder_src_pad.get_current_caps()
     gststruct = caps.get_structure(0)
     gstname = gststruct.get_name()
@@ -306,31 +309,29 @@ def cb_newpad(decodebin, decoder_src_pad, data):
 
 
 def decodebin_child_added(child_proxy, Object, name, user_data):
-    print("Decodebin child added:", name, "\n")
+    log.info('- Decodebin child added: {name}')
     if(name.find("decodebin") != -1):
         Object.connect("child-added", decodebin_child_added, user_data)
     if(is_aarch64() and name.find("nvv4l2decoder") != -1):
-        print("Seting bufapi_version\n")
+        log.info('- Seting bufapi_version')
         Object.set_property("bufapi-version", True)
 
 
 def create_source_bin(index, uri):
-    print("Creating source bin")
-
     # Create a source GstBin to abstract this bin's content from the rest of the
     # pipeline
     bin_name = "source-bin-%02d" % index
-    print(bin_name)
+    log.info('- Creating source bin: {bin_name}')
     nbin = Gst.Bin.new(bin_name)
     if not nbin:
-        sys.stderr.write(" Unable to create source bin \n")
+        log.critical('Error: Unable to create source bin: {bin_name}')
 
     # Source element for reading from the uri.
     # We will use decodebin and let it figure out the container format of the
     # stream and the codec and plug the appropriate demux and decode plugins.
     uri_decode_bin = Gst.ElementFactory.make("uridecodebin", "uri-decode-bin")
     if not uri_decode_bin:
-        sys.stderr.write(" Unable to create uri decode bin \n")
+        log.critical('Error: Unable to create uri decode bin')
     # We set the input uri to the source element
     uri_decode_bin.set_property("uri", uri)
     # Connect to the "pad-added" signal of the decodebin which generates a
@@ -346,7 +347,7 @@ def create_source_bin(index, uri):
     Gst.Bin.add(nbin, uri_decode_bin)
     bin_pad = nbin.add_pad(Gst.GhostPad.new_no_target("src", Gst.PadDirection.SRC))
     if not bin_pad:
-        sys.stderr.write(" Failed to add ghost pad in source bin \n")
+        log.critical('Error: Failed to add ghost pad in source bin')
         return None
     return nbin
 
@@ -375,8 +376,15 @@ def main(args):
     log = init_log(logfile, process, loglevel, logsize, logbackups)
     log.critical('Starting program: %s with OpenCv version %s in %s mode and saving unknow face: %s' % (process, cv2.__version__, 'Screen' if gui else 'Headless', 'On' if save_unknown else 'Off'))
     starttime = time.perf_counter()
-    unknow_faces_path = Path(unknow_face_dir)
-    unknow_faces_path.mkdir(parents=True, exist_ok=True)
+    # create directory to store unknown faces detected
+    unknown_faces_path = Path(unknown_face_dir)
+    unknown_faces_path.mkdir(parents=True, exist_ok=True)
+    # create logfile to store known faces detected
+    global known_faces_log
+    unknown_faces_logpath = Path(known_face_dir)
+    unknown_faces_logpath.mkdir(parents=True, exist_ok=True)
+    known_faces_log = init_log(known_faces_logfile, process, loglevel, logsize, logbackups)
+    known_faces_log.critical('Starting program {process}')
 
     # opening learned faces file
     log.info(f'- Opening learned faces file: {learnedfile}')
