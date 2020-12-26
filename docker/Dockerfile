@@ -20,10 +20,14 @@ ARG OPENCV_VERSION=4.5.0
 RUN cd /opt/nvidia && \
     apt-get install -y \
     # python3-pip \
-    libjpeg-dev && \
+    libjpeg-dev \
+    libopenblas-dev \
+    liblapack-dev && \
     mkdir dlib && cd dlib && \
-    wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
-    tar jxvf dlib-19.21.tar.bz2 && \
+    # wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
+    # tar jxvf dlib-19.21.tar.bz2 && \
+    wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip --progress=bar:force:noscroll && \
+    unzip dlib.zip && \
     cd dlib-19.21 && \
     mkdir build && \
     cd build && \
