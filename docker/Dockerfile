@@ -73,9 +73,12 @@ RUN cd /opt/nvidia && \
     wget http://developer.download.nvidia.com/compute/cuda/11.0.2/local_installers/cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
     dpkg -i cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
     apt-key add /var/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
+    # it looks like the key is not set correctly, so let's try this
+    apt-key add /opt/nvidia/cuda/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
     apt-get -y install cuda && \
-    # install dlib
-    cd /opt/nvidia && \
+    nvcc --version
+# install dlib
+RUN cd /opt/nvidia && \
     mkdir dlib && cd dlib && \
     # wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
     # tar jxvf dlib-19.21.tar.bz2 && \
