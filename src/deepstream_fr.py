@@ -186,7 +186,7 @@ def face_recog(image, obj_meta):
     obj_left = int(obj_coordinates.left) - border if (int(obj_coordinates.left) - border) > 0 else 0
     obj_bottom = obj_top + int(obj_coordinates.height) + border if (obj_top + int(obj_coordinates.height) + border) < TILED_OUTPUT_HEIGHT else TILED_OUTPUT_HEIGHT
     obj_right = obj_left + int(obj_coordinates.width) + border if (obj_top + int(obj_coordinates.width) + border) < TILED_OUTPUT_WIDTH else TILED_OUTPUT_WIDTH
-    log.info(f'--- Object located at location top: {obj_top}, left: {obj_left}, bottom: {obj_bottom}, right: {obj_right}')
+    log.debug(f'--- Person located at location top: {obj_top}, left: {obj_left}, bottom: {obj_bottom}, right: {obj_right}')
     # Resize frame of video for faster face recognition processing, when required
     if resize_factor == 1:
         small_frame = image[obj_top:obj_bottom, obj_left:obj_right]  # only take the object part from the image for faster recognition
@@ -198,75 +198,76 @@ def face_recog(image, obj_meta):
     # now find locations of any face in the image
     face_locations = face_recognition.face_locations(rgb_small_frame, number_of_times_to_upsample=up_scale, model=detection_model)
     if face_locations:
-        log.info(f'--- Number of faces found in image: {len(face_locations)}')
-    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations, num_jitters=number_jitters, model=encoding_model)
+        log.debug(f'--- Number of faces found in image: {len(face_locations)}')
+        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations, num_jitters=number_jitters, model=encoding_model)
 
-    face_names = []
-    for face_encoding in face_encodings:
-        # See if the face is a match for the known face(s)
-        matches = face_recognition.compare_faces(Encodings, face_encoding)
-        name = unknown_face_name
-        # use the known face with the smallest distance to the new face
-        face_distances = face_recognition.face_distance(Encodings, face_encoding)
-        best_match_index = np.argmin(face_distances)
-        if matches[best_match_index]:
-            name = f'{Names[best_match_index]}-{Sequence[best_match_index]}'
-        face_names.append(name)
-        # some logging below
-        if name == unknown_face_name:
-            log.info('-- Unknown face detected')
-        else:
-            log.info(f'-- Known face detected: {name}')
-            known_faces_log.info(f'- Known face detected: {name}')
+        face_names = []
+        for face_encoding in face_encodings:
+            # See if the face is a match for the known face(s)
+            matches = face_recognition.compare_faces(Encodings, face_encoding)
+            name = unknown_face_name
+            # use the known face with the smallest distance to the new face
+            face_distances = face_recognition.face_distance(Encodings, face_encoding)
+            best_match_index = np.argmin(face_distances)
+            if matches[best_match_index]:
+                name = f'{Names[best_match_index]}-{Sequence[best_match_index]}'
+            face_names.append(name)
+            # some logging below
+            if name == unknown_face_name:
+                log.info('-- Unknown face detected')
+            else:
+                log.info(f'-- Known face detected: {name}')
+                known_faces_log.info(f'- Known face detected: {name}')
 
-    # display the results
-    if face_names:
-        frame = cv2.cvtColor(image, cv2.COLOR_RGBA2BGR)  # the image coming from the pipeline is RGBA, and OpenCV is in BGR so we need to convert the image
-        for (top, right, bottom, left), face_name in zip(face_locations, face_names):
-            if resize_factor != 1:
-                top *= resize_factor
-                right *= resize_factor
-                bottom *= resize_factor
-                left *= resize_factor
-            # adjust the location of the face because we cropped the full image to the object, but need the rectangle on the full image
-            top = obj_top + top
-            left = obj_left + left
-            bottom = obj_top + bottom
-            right = obj_left + right
-            # save the unknown faces and do this before the rectangle is inserted in the frame
-            if face_name == unknown_face_name and save_unknown:
-                j = 0
-                while os.path.exists(f'{unknown_face_dir}{unknown_face_filename}{j}.jpg'):
-                    j += 1
-                if save_object:
-                    # save the object
-                    cv2.imwrite(f'{unknown_face_dir}{unknown_face_filename}{j}.jpg', frame[obj_top:obj_bottom, obj_left:obj_right])
-                else:
-                    # only save the face with a border -> crop image using numphy
-                    cv2.imwrite(
-                        f'{unknown_face_dir}{unknown_face_filename}{j}.jpg',
-                        frame[top - border if top - border > 0 else 0: bottom + border if bottom + border < TILED_OUTPUT_HEIGHT else TILED_OUTPUT_HEIGHT, left - border if left - border > 0 else 0: right + border if right + border < TILED_OUTPUT_WIDTH else TILED_OUTPUT_WIDTH])
-            # draw a box around the face
-            log.info(f'-- Adding box for: {face_name}, at location top: {top}, left: {left}, bottom: {bottom}, right: {right}')
-            cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
-            # draw a box above the face
-            cv2.rectangle(frame, (left, top - 25), (left + 200, top), (0, 255, 255), -1)
-            cv2.putText(frame, face_name, (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX, .75, (255, 0, 0), 2)
-        # write updated image back in the pipeline format (RGBA) when there are any faces and at the location on the image, not the cropped object
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+        # display the results
+        if face_names:
+            frame = cv2.cvtColor(image, cv2.COLOR_RGBA2BGR)  # the image coming from the pipeline is RGBA, and OpenCV is in BGR so we need to convert the image
+            for (top, right, bottom, left), face_name in zip(face_locations, face_names):
+                if resize_factor != 1:
+                    top *= resize_factor
+                    right *= resize_factor
+                    bottom *= resize_factor
+                    left *= resize_factor
+                # adjust the location of the face because we cropped the full image to the object, but need the rectangle on the full image
+                top = obj_top + top
+                left = obj_left + left
+                bottom = obj_top + bottom
+                right = obj_left + right
+                # save the unknown faces and do this before the rectangle is inserted in the frame
+                if face_name == unknown_face_name and save_unknown:
+                    j = 0
+                    while os.path.exists(f'{unknown_face_dir}{unknown_face_filename}{j}.jpg'):
+                        j += 1
+                    if save_object:
+                        # save the object
+                        cv2.imwrite(f'{unknown_face_dir}{unknown_face_filename}{j}.jpg', frame[obj_top:obj_bottom, obj_left:obj_right])
+                    else:
+                        # only save the face with a border -> crop image using numphy
+                        cv2.imwrite(
+                            f'{unknown_face_dir}{unknown_face_filename}{j}.jpg',
+                            frame[top - border if top - border > 0 else 0: bottom + border if bottom + border < TILED_OUTPUT_HEIGHT else TILED_OUTPUT_HEIGHT, left - border if left - border > 0 else 0: right + border if right + border < TILED_OUTPUT_WIDTH else TILED_OUTPUT_WIDTH])
+                # draw a box around the face
+                log.info(f'-- Adding box for: {face_name}, at location top: {top}, left: {left}, bottom: {bottom}, right: {right}')
+                cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
+                # draw a box above the face
+                cv2.rectangle(frame, (left, top - 25), (left + 200, top), (0, 255, 255), -1)
+                cv2.putText(frame, face_name, (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX, .75, (255, 0, 0), 2)
+            # write updated image back in the pipeline format (RGBA) when there are any faces and at the location on the image, not the cropped object
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
     return image
 
 
 def draw_bounding_boxes(image, obj_meta):
     if obj_meta.class_id == PGIE_CLASS_ID_PERSON:
         # this is a person, let's see if we know this person and draw a box around the face
+        log.info('-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
         image = face_recog(image, obj_meta)
     elif obj_meta.class_id == PGIE_CLASS_ID_VEHICLE:
         # this is a vehicle, let's see if we can find a license plate
-        log.info('-- Vehicle detected, but no function yet to check his license plate')
+        log.info('-- Vehicle detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
     else:
         # some other object, do nothing
-        log.info('-- Object detected, but it is not a person or a vehicle')
+        log.info('-- Object detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
     return image
 
 
