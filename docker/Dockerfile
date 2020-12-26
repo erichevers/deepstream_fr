@@ -82,6 +82,8 @@ RUN cd /opt/nvidia && \
 # install dlib
 RUN cd /opt/nvidia && \
     mkdir dlib && cd dlib && \
+    export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
+    export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     # wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
     # tar jxvf dlib-19.21.tar.bz2 && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip --progress=bar:force:noscroll && \
@@ -95,6 +97,8 @@ RUN cd /opt/nvidia && \
     python3 setup.py install
 # install bindings for DeepStream Metadata libraries
 RUN cd /opt/nvidia/deepstream/deepstream/lib && \
+    export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
+    export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     python3 setup.py install && \
     # and install other programs
     apt-get install -y \
