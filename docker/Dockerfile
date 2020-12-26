@@ -19,7 +19,7 @@ RUN apt-get -y update && \
 ARG OPENCV_VERSION=4.5.0
 RUN cd /opt/nvidia && \
     # show cuda version
-    nvcc -- version && \
+    nvcc --version && \
     apt-get install -y \
     # python3-pip \
     libjpeg-dev \
