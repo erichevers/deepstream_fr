@@ -18,6 +18,8 @@ RUN apt-get -y update && \
 # download and compile dlib and OpenCV with CUDA
 ARG OPENCV_VERSION=4.5.0
 RUN cd /opt/nvidia && \
+    # show cuda version
+    nvcc -- version && \
     apt-get install -y \
     # python3-pip \
     libjpeg-dev \
@@ -63,7 +65,17 @@ RUN cd /opt/nvidia && \
     libsm6 \
     libxext6 \
     libxrender1 && \
-    # let's see if the above did the trick
+    # upgrade cuda
+    cd /opt/nvidia && \
+    mkdir cuda && cd cuda && \
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
+    mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
+    wget http://developer.download.nvidia.com/compute/cuda/11.0.2/local_installers/cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
+    dpkg -i cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
+    apt-key add /var/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
+    apt-get -y install cuda && \
+    # install dlib
+    cd /opt/nvidia && \
     mkdir dlib && cd dlib && \
     # wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
     # tar jxvf dlib-19.21.tar.bz2 && \
