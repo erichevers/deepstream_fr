@@ -22,7 +22,48 @@ RUN cd /opt/nvidia && \
     # python3-pip \
     libjpeg-dev \
     libopenblas-dev \
-    liblapack-dev && \
+    liblapack-dev \
+    # and the following just to be sure for opencv2 install
+    ffmpeg \
+    libtbb2 \
+    gfortran \
+    apt-utils \
+    pkg-config \
+    checkinstall \
+    qt5-default \
+    build-essential \
+    libopenblas-base \
+    libopenblas-dev \
+    liblapack-dev \
+    libatlas-base-dev \
+    libgtk-3-dev \
+    libavcodec58 \
+    libavcodec-dev \
+    libavformat58 \
+    libavformat-dev \
+    libavutil-dev \
+    libswscale5 \
+    libswscale-dev \
+    libjpeg8-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libdc1394-22 \
+    libdc1394-22-dev \
+    libxine2-dev \
+    libv4l-dev \
+    libgstreamer1.0 \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-0 \
+    libgstreamer-plugins-base1.0-dev \
+    libglew-dev \
+    libpostproc-dev \
+    libeigen3-dev \
+    libtbb-dev \
+    zlib1g-dev \
+    libsm6 \
+    libxext6 \
+    libxrender1 && \
+    # let's see if the above did the trick
     mkdir dlib && cd dlib && \
     # wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
     # tar jxvf dlib-19.21.tar.bz2 && \
