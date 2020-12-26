@@ -23,6 +23,7 @@ RUN cd /opt/nvidia && \
     apt-get install -y \
     # python3-pip \
     libjpeg-dev \
+    libopenblas-base \
     libopenblas-dev \
     liblapack-dev \
     # and the following just to be sure for opencv2 install
