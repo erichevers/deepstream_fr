@@ -70,8 +70,11 @@ RUN cd /opt/nvidia && \
     mkdir cuda && cd cuda && \
     wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
     mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
-    wget http://developer.download.nvidia.com/compute/cuda/11.0.2/local_installers/cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
-    dpkg -i cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb
+    wget http://developer.download.nvidia.com/compute/cuda/11.0.2/local_installers/cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb
+RUN apt-key add /var/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
+    dpkg -i cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
+    apt-get -y install cuda && \
+    nvcc --version
 # install bindings for DeepStream Metadata libraries
 RUN cd /opt/nvidia/deepstream/deepstream/lib && \
     python3 setup.py install && \
@@ -120,6 +123,4 @@ COPY    ./src/ .
 RUN cd /opt/nvidia/deepstream/deepstream-5.0/sources/deepstream_python_apps/apps/deepstream_fr && \
     mkdir logdir
 # Call default command and show what we have are running
-RUN python3 --version && \
-    python3 -c "import cv2 ; print(cv2.__version__)" && \
-    python3 -c "import cv2 ; print(cv2.getBuildInformation())"
+RUN python3 --version
