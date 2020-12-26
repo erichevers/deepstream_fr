@@ -76,7 +76,23 @@ RUN cd /opt/nvidia && \
     apt-key add /var/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
     apt-get update && \
     apt-get -y install cuda && \
+    export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
+    export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version
+# install dlib
+RUN cd /opt/nvidia && \
+    mkdir dlib && cd dlib && \
+    # wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
+    # tar jxvf dlib-19.21.tar.bz2 && \
+    wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip --progress=bar:force:noscroll && \
+    unzip dlib.zip && \
+    cd dlib-master && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    cmake --build . && \
+    cd ../ && \
+    python3 setup.py install
 # install bindings for DeepStream Metadata libraries
 RUN cd /opt/nvidia/deepstream/deepstream/lib && \
     python3 setup.py install && \
