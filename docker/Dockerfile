@@ -81,8 +81,8 @@ RUN cd /opt/nvidia && \
     nvcc --version
 # install dlib
 RUN cd /opt/nvidia && \
-    # mkdir dlib && \
-    cd dlib && \
+    mkdir dlib2 && \
+    cd dlib2 && \
     export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip --progress=bar:force:noscroll && \
