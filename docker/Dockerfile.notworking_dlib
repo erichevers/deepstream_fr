@@ -1,6 +1,6 @@
 FROM nvcr.io/nvidia/deepstream-l4t:5.0.1-20.09-samples
 # this is the deepstream version with the samples.
-# WORKDIR /opt/nvidia/deepstream/deepstream-5.0/sources
+WORKDIR /opt/nvidia/deepstream/deepstream-5.0/sources
 # upgrade stuff and install required programs
 RUN apt-get -y update && \
     apt-get -y upgrade && \
@@ -65,6 +65,69 @@ RUN cd /opt/nvidia && \
     libsm6 \
     libxext6 \
     libxrender1 && \
+    # upgrade cuda
+    cd /opt/nvidia && \
+    mkdir cuda && cd cuda && \
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
+    mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
+    wget http://developer.download.nvidia.com/compute/cuda/11.0.2/local_installers/cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
+    dpkg -i cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
+    apt-key add /var/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
+    # it looks like the key is not set correctly, so let's try this
+    apt-key add /opt/nvidia/cuda/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
+    apt-get -y install cuda && \
+    nvcc --version
+# install dlib
+RUN cd /opt/nvidia && \
+    mkdir dlib && cd dlib && \
+    # wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
+    # tar jxvf dlib-19.21.tar.bz2 && \
+    wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip --progress=bar:force:noscroll && \
+    unzip dlib.zip && \
+    cd dlib-master && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    cmake --build . && \
+    cd ../ && \
+    python3 setup.py install && \
+    # OpenCV
+    cd /opt/nvidia && \
+    mkdir opencv && cd opencv && \
+    apt-get install -y \
+    # cmake wget unzip \
+    g++ && \
+    wget -O opencv.zip https://github.com/opencv/opencv/archive/$OPENCV_VERSION.zip -O opencv.zip --progress=bar:force:noscroll && \
+    wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/$OPENCV_VERSION.zip -O opencv_contrib.zip --progress=bar:force:noscroll && \
+	unzip opencv.zip && \
+    mv opencv-$OPENCV_VERSION opencv && \
+    rm opencv.zip && \
+	unzip opencv_contrib.zip && \
+    mv opencv_contrib-$OPENCV_VERSION opencv_contrib && \
+    rm opencv_contrib.zip && \
+	mkdir -p build && cd build && \
+	cmake \
+    	-D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules \
+        -D CMAKE_BUILD_TYPE=RELEASE \
+        -D CMAKE_INSTALL_PREFIX=/usr/local \
+        -D WITH_GTK=ON \
+        -D WITH_FFMPEG=ON \
+        -D WITH_GSTREAMER=ON \
+        -D WITH_CUDA=ON \
+        -D WITH_CUDNN=OFF \
+        -D CUDA_ARCH_BIN="5.3,6.2,7.2" \
+        -D CUDA_ARCH_PTX="" \
+        -D WITH_LIBV4L=ON \
+        -D BUILD_opencv_python3 \
+        -D BUILD_TESTS=OFF \
+        -D BUILD_PERF_TESTS=OFF \
+        -D BUILD_EXAMPLES=OFF \
+        ../opencv && \
+	# cmake --build . && \
+    make -j4 && \
+    make install && \
+    ldconfig
+    
 # install bindings for DeepStream Metadata libraries
 RUN cd /opt/nvidia/deepstream/deepstream/lib && \
     python3 setup.py install && \
@@ -105,8 +168,8 @@ RUN apt-get install -y \
     libjpeg8-dev \
     liblapack-dev \
     libblas-dev \
-    gfortran
-#    pip3 install face_recognition
+    gfortran && \
+    pip3 install face_recognition
 # get our software ready and at the correct place
 WORKDIR /opt/nvidia/deepstream/deepstream-5.0/sources/deepstream_python_apps/apps/deepstream_fr
 COPY    ./src/ .
