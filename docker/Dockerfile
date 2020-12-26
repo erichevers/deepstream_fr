@@ -37,12 +37,12 @@ RUN cd /opt/nvidia && \
     liblapack-dev \
     libatlas-base-dev \
     libgtk-3-dev \
-    libavcodec58 \
+    # libavcodec58 this one seems to not exist
     libavcodec-dev \
-    libavformat58 \
+    # libavformat58 this one seems to not exist
     libavformat-dev \
     libavutil-dev \
-    libswscale5 \
+    # libswscale5 this one seems not to exist
     libswscale-dev \
     libjpeg8-dev \
     libpng-dev \
