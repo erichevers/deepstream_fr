@@ -28,7 +28,7 @@ RUN cd /opt/nvidia && \
     # tar jxvf dlib-19.21.tar.bz2 && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip --progress=bar:force:noscroll && \
     unzip dlib.zip && \
-    cd dlib-19.21 && \
+    cd dlib-master && \
     mkdir build && \
     cd build && \
     cmake .. && \
