@@ -67,7 +67,7 @@ RUN cd /opt/nvidia && \
     libxrender1
 # upgrade cuda
 RUN cd /opt/nvidia && \
-    mkdir cuda1120 && cd cuda1120 && \
+    mkdir cuda && cd cuda && \
     # remove old version first => not
     # apt-get --purge remove cuda-10.2 && \
     wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
@@ -78,18 +78,18 @@ RUN cd /opt/nvidia && \
     apt-key add /var/cuda-repo-ubuntu1804-11-2-local/7fa2af80.pub && \
     apt-get update  && \
     apt-get -y install cuda && \
-    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}}$ && \
+    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version
 # install dlib
 RUN cd /opt/nvidia && \
-    mkdir dlib1921 && \
-    cd dlib1921 && \
-    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}}$ && \
+    mkdir dlib && \
+    cd dlib && \
+    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip && \
     unzip dlib.zip && \
-    cd /opt/nvidia/dlib1921/dlib-master && \
+    cd dlib-master && \
     mkdir build && \
     # cd build && \
     # cmake .. && \
@@ -99,7 +99,7 @@ RUN cd /opt/nvidia && \
 # here we should install opencv, but first get dlib comiled with CUDA support
 # install bindings for DeepStream Metadata libraries
 RUN cd /opt/nvidia/deepstream/deepstream/lib && \
-    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}}$ && \
+    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     python3 setup.py install && \
     # and install other programs
@@ -142,8 +142,8 @@ RUN apt-get install -y \
     gfortran
 #    pip3 install face_recognition
 # cleanup
-RUN rm -rf /opt/nvidia/dlib1921 && \
-    rm -rf /opt/nvidia/cuda1120
+RUN rm -rf /opt/nvidia/dlib && \
+    rm -rf /opt/nvidia/cuda
 # get our software ready and at the correct place
 WORKDIR /opt/nvidia/deepstream/deepstream-5.0/sources/deepstream_python_apps/apps/deepstream_fr
 COPY    ./src/ .
