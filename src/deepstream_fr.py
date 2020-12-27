@@ -267,16 +267,16 @@ def draw_bounding_boxes(image, obj_meta):
     if obj_meta.class_id == PGIE_CLASS_ID_PERSON:
         # this is a person, let's see if we know this person and draw a box around the face
         if obj_meta.confidence > person_min_confidence:
-            log.info(f'-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence} => run face recognition')
+            log.info(f'-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence:.2f} => run face recognition')
             image = face_recog(image, obj_meta)
         else:
-            log.info(f'-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence} => no face recognition')
+            log.info(f'-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence:.2f} => no face recognition')
     elif obj_meta.class_id == PGIE_CLASS_ID_VEHICLE:
         # this is a vehicle
-        log.info(f'-- Vehicle detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
+        log.info(f'-- Vehicle detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence:.2f}')
     else:
         # some other object, do nothing
-        log.info(f'-- Object detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
+        log.info(f'-- Object detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence:.2f}')
     return image
 
 
