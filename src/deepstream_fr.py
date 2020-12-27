@@ -488,7 +488,7 @@ def main(argv):
         stream_path.mkdir(parents=True, exist_ok=True)
         frame_count["stream_" + str(i)] = 0
         saved_count["stream_" + str(i)] = 0
-        uri_name = stream[i + 1]
+        uri_name = stream[i]
         if uri_name.find("rtsp://") == 0:
             is_live = True
         source_bin = create_source_bin(i, uri_name)
