@@ -260,14 +260,14 @@ def face_recog(image, obj_meta):
 def draw_bounding_boxes(image, obj_meta):
     if obj_meta.class_id == PGIE_CLASS_ID_PERSON:
         # this is a person, let's see if we know this person and draw a box around the face
-        log.info('-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
+        log.info(f'-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
         image = face_recog(image, obj_meta)
     elif obj_meta.class_id == PGIE_CLASS_ID_VEHICLE:
         # this is a vehicle, let's see if we can find a license plate
-        log.info('-- Vehicle detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
+        log.info(f'-- Vehicle detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
     else:
         # some other object, do nothing
-        log.info('-- Object detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
+        log.info(f'-- Object detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
     return image
 
 
@@ -310,7 +310,7 @@ def cb_newpad(decodebin, decoder_src_pad, data):
 
 
 def decodebin_child_added(child_proxy, Object, name, user_data):
-    log.info('- Decodebin child added: {name}')
+    log.info(f'- Decodebin child added: {name}')
     if(name.find("decodebin") != -1):
         Object.connect("child-added", decodebin_child_added, user_data)
     if(is_aarch64() and name.find("nvv4l2decoder") != -1):
@@ -322,7 +322,7 @@ def create_source_bin(index, uri):
     # Create a source GstBin to abstract this bin's content from the rest of the
     # pipeline
     bin_name = "source-bin-%02d" % index
-    log.info('- Creating source bin: {bin_name}')
+    log.info(f'- Creating source bin: {bin_name}')
     nbin = Gst.Bin.new(bin_name)
     if not nbin:
         log.critical('Error: Unable to create source bin: {bin_name}')
