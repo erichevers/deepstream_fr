@@ -90,7 +90,16 @@ RUN cd /opt/nvidia && \
     export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version && \
-    apt-get update && apt-get install -y cblas lapack && \
+    apt-get update && apt-get install -y \
+    ibhdf5-serial-dev \
+    hdf5-tools \
+    libhdf5-dev \
+    zlib1g-dev \
+    zip \
+    libjpeg8-dev \
+    liblapack-dev \
+    libblas-dev \
+    gfortran && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip && \
     unzip dlib.zip && \
     cd dlib-master && \
