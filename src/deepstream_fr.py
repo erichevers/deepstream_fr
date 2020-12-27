@@ -425,6 +425,7 @@ def main(argv):
 
     for i in range(0, len(stream)):
         fps_streams["stream{0}".format(i)] = GETFPS(i)
+        log.info(f'- Detected stream: {stream[i]}')
     number_sources = len(stream)
 
     # start logging and counter and create directory for any unknow faces just in case we find any
