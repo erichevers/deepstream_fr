@@ -82,6 +82,7 @@ capture_filename = 'Frame-'  # this is the name to be used when a screenshot is 
 unknown_face_filename = 'UnknownFace-'  # this is the name to be used when an unknow face is found
 border = 50  # store unknown face with some surrounding
 transcoder = cv2.CAP_FFMPEG  # cv2.CAP_V4L cv2.CAP_V4L2 cv2.CAP_DC1394 cv2.CAP_GSTREAMER or cv2.CAP_FFMPEG
+person_min_confidence = 0.58  # minimum confidence before we do face recognition on a person
 # additional variables
 Names = []
 Sequence = []
@@ -260,10 +261,13 @@ def face_recog(image, obj_meta):
 def draw_bounding_boxes(image, obj_meta):
     if obj_meta.class_id == PGIE_CLASS_ID_PERSON:
         # this is a person, let's see if we know this person and draw a box around the face
-        log.info(f'-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
-        image = face_recog(image, obj_meta)
+        if obj_meta.confidence > person_min_confidence:
+            log.info(f'-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence} => run face recognition')
+            image = face_recog(image, obj_meta)
+        else:
+            log.info(f'-- Person detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence} => no face recognition')
     elif obj_meta.class_id == PGIE_CLASS_ID_VEHICLE:
-        # this is a vehicle, let's see if we can find a license plate
+        # this is a vehicle
         log.info(f'-- Vehicle detected - class_id:{obj_meta.class_id} with confidence: {obj_meta.confidence}')
     else:
         # some other object, do nothing
