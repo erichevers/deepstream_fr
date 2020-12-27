@@ -90,7 +90,7 @@ RUN cd /opt/nvidia && \
     export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version && \
-    apt-get update && apt-get install -y python3-pip cmake libopenblas-dev liblapack-dev libjpeg-dev && \
+    apt-get update && apt-get install -y cblas lapack && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip && \
     unzip dlib.zip && \
     cd dlib-master && \
