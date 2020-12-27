@@ -91,6 +91,14 @@ RUN cd /opt/nvidia && \
     nvcc --version && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip && \
     unzip dlib.zip && \
+    # run test
+    cd cmake_utils/test_for_cudnn && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    cmake --build . && \
+    cd ../.. && \
+    # end test
     cd dlib-master && \
     mkdir build && \
     cd build && \
