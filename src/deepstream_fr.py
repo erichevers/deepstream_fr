@@ -29,6 +29,7 @@ from os import path
 import logging
 import face_recognition  # to load the face recognition libary
 import pickle            # to load the trained faces file
+import argparse
 from pathlib import Path  # to auto create directories
 from GenericFunctions import init_log
 
@@ -361,9 +362,9 @@ def create_source_bin(index, uri):
     return nbin
 
 
-def main(argparse):
+def main(argv):
     # first parse the arguments
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Deepstream Face Recognition')
     parser.add_argument('-l', '--learned', help='this is the file that contains the learned faces')
     parser.add_argument('-s', '--stream', help='this is the URL or filenames of the video stream (argument can be used multilple times)', action='append', nargs='+')
     parser.add_argument('-o', '--output', help='Optional: this is the output (gui or headless)')
