@@ -68,8 +68,8 @@ RUN cd /opt/nvidia && \
 # upgrade cuda
 RUN cd /opt/nvidia && \
     mkdir cuda1120 && cd cuda1120 && \
-    # remove old version first
-    apt-get --purge remove cuda-10.2 && \
+    # remove old version first => not
+    # apt-get --purge remove cuda-10.2 && \
     wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
     mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
     wget https://developer.download.nvidia.com/compute/cuda/11.2.0/local_installers/cuda-repo-ubuntu1804-11-2-local_11.2.0-460.27.04-1_arm64.deb && \
