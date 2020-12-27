@@ -81,8 +81,7 @@ encoding_model = 'large'    # this is to define the number of landmarks to use 5
 capture_filename = 'Frame-'  # this is the name to be used when a screenshot is made of the image
 unknown_face_filename = 'UnknownFace-'  # this is the name to be used when an unknow face is found
 border = 50  # store unknown face with some surrounding
-transcoder = cv2.CAP_FFMPEG  # cv2.CAP_V4L cv2.CAP_V4L2 cv2.CAP_DC1394 cv2.CAP_GSTREAMER or cv2.CAP_FFMPEG
-person_min_confidence = 0.58  # minimum confidence before we do face recognition on a person
+person_min_confidence = 0.33  # minimum confidence before we do face recognition on a person (0.58 is OK for daylight, 0.33 for nighttime)
 # additional variables
 Names = []
 Sequence = []
@@ -166,12 +165,17 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
             except StopIteration:
                 break
 
-        log.info(f'- Frame Number: {frame_number}, Number of Objects: {num_rects}, Vehicle_count: {obj_counter[PGIE_CLASS_ID_VEHICLE]}, Person_count={obj_counter[PGIE_CLASS_ID_PERSON]}')
+        if frame_meta.pad_index % 1000 == 0 or num_rects:
+            # at least once in the 1000 frames write some logging or when there was an object
+            log.info(f'- Frame Number: {frame_number}, Number of Objects: {num_rects}, Vehicle_count: {obj_counter[PGIE_CLASS_ID_VEHICLE]}, Person_count={obj_counter[PGIE_CLASS_ID_PERSON]}')
+        else:
+            log.debug(f'- Frame Number: {frame_number}, Number of Objects: {num_rects}, Vehicle_count: {obj_counter[PGIE_CLASS_ID_VEHICLE]}, Person_count={obj_counter[PGIE_CLASS_ID_PERSON]}')
         # Get frame rate through this probe
         fps_streams["stream{0}".format(frame_meta.pad_index)].get_fps()
         if save_image:
             cv2.imwrite(f'{folder_name}/stream_{frame_meta.pad_index}/frame_{frame_number}.jpg', frame_image)
         saved_count["stream_" + str(frame_meta.pad_index)] += 1
+        # continue with the next frame when there is one
         try:
             l_frame = l_frame.next
         except StopIteration:
@@ -358,21 +362,69 @@ def create_source_bin(index, uri):
 
 
 def main(args):
-    # Check input arguments
-    if len(args) < 2:
-        sys.stderr.write("usage: %s <uri1> [uri2] ... [uriN] <folder to save frames>\n" % args[0])
-        sys.exit(1)
+    # first parse the arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--learned', help='this is the file that contains the learned faces')
+    parser.add_argument('-s', '--stream', help='this is the URL or filenames of the video stream (argument can be used multilple times)', action='append', nargs='+')
+    parser.add_argument('-o', '--output', help='Optional: this is the output (gui or headless)')
+    parser.add_argument('-r', '--rate', help='Optional: this is sampling rate')
+    parser.add_argument('-f', '--factor', help='Optional: this is the resize factor')
+    parser.add_argument('-p', '--upscale', help='Optional: this is the upscale')
+    parser.add_argument('-d', '--detection', help='Optional: this is the detection model (hog or cnn)')
+    parser.add_argument('-j', '--jitters', help='Optional: this is the number of jitters')
+    parser.add_argument('-e', '--encoding', help='Optional: this is the encoding model (large or small)')
+    parser.add_argument('-w', '--write', help='Optional: this enable or disables writing (saving) unknown faces (on or off)')
+    parser.add_argument('-c', '--confidence', help='Optional: minimum confidence of person before doing face recognition')
+    parser.add_argument('-u', '--unclear', help='Optional: this is the directory to store unclear objects')
 
-    for i in range(0, len(args) - 2):
+    args = parser.parse_args()
+    global learnedfile
+    learnedfile = args.learned
+    if not learnedfile:
+        print('No file with learned faces specified. Please use: python3 deepstream_fr.py -l \"trained_faces.pkl\" -s \"rtsp://thecamera.com\" [-r 5 -f 2 -p 2 -d \"hog\" -j 1 -e \"large" -c 0.33 -u logdir/frames]')
+        sys.exit(404)  # Bail out with 404 = no file with learned faces specified
+    global stream
+    stream = args.stream
+    if not stream:
+        print('No video stream specified. Please use: python3 deepstream_fr.py -l \"trained_faces.pkl\" -s \"rtsp://thecamera.com\" [-r 5 -f 2 -p 2 -d \"hog\" -j 1 -e \"large" -c 0.33 -u logdir/frames]')
+        sys.exit(404)  # Bail out with 404 = no stream specified
+    # overrule fixed values when used in argument
+    if args.output:
+        if args.output.upper() == 'HEADLESS':
+            global gui
+            gui = False
+    if args.rate:
+        global sampling_rate
+        sampling_rate = int(args.rate)
+    if args.factor:
+        global resize_factor
+        resize_factor = int(args.factor)
+    if args.upscale:
+        global up_scale
+        up_scale = int(args.upscale)
+    if args.detection:
+        global detection_model
+        detection_model = args.detection
+    if args.jitters:
+        global number_jitters
+        number_jitters = int(args.jitters)
+    if args.encoding:
+        global encoding_model
+        encoding_model = args.encoding
+    if args.write:
+        if args.output.upper() == 'OFF':
+            global save_unknown
+            save_unknown = False
+    if args.confidence:
+        global person_min_confidence
+        person_min_confidence = float(args.confidence)
+    if args.unclear:
+        global folder_name
+        folder_name = args.unclear
+
+    for i in range(0, len(stream)):
         fps_streams["stream{0}".format(i)] = GETFPS(i)
-    number_sources = len(args) - 2
-
-    global folder_name
-    folder_name = args[-1]
-    # TODO: check if this check is realy required
-    #  if path.exists(folder_name):
-    #    sys.stderr.write("The output folder %s already exists. Please remove it first.\n" % folder_name)
-    #    sys.exit(1)
+    number_sources = len(stream)
 
     # start logging and counter and create directory for any unknow faces just in case we find any
     global log
