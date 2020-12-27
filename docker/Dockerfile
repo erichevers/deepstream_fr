@@ -91,7 +91,7 @@ RUN cd /opt/nvidia && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version && \
     apt-get update && apt-get install -y \
-    ibhdf5-serial-dev \
+    libhdf5-serial-dev \
     hdf5-tools \
     libhdf5-dev \
     zlib1g-dev \
