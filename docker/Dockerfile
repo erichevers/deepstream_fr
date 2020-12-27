@@ -83,14 +83,14 @@ RUN cd /opt/nvidia && \
     nvcc --version
 # install dlib
 RUN cd /opt/nvidia && \
-    # apt-get update && apt-get install -y python3-pip cmake libopenblas-dev liblapack-dev libjpeg-dev && pip3 -v install Cython && \
     mkdir dlib && \
     cd dlib && \
     nvcc --version && \
     cmake --version && \
     export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
-    # export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
+    export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version && \
+    apt-get update && apt-get install -y python3-pip cmake libopenblas-dev liblapack-dev libjpeg-dev && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip && \
     unzip dlib.zip && \
     cd dlib-master && \
