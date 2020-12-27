@@ -68,13 +68,17 @@ RUN cd /opt/nvidia && \
 # upgrade cuda
 RUN cd /opt/nvidia && \
     mkdir cuda1120 && cd cuda1120 && \
+    # remove old version first
+    apt-get --purge remove cuda-10.2 && \
     wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
     mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
     wget https://developer.download.nvidia.com/compute/cuda/11.2.0/local_installers/cuda-repo-ubuntu1804-11-2-local_11.2.0-460.27.04-1_arm64.deb && \
     dpkg -i cuda-repo-ubuntu1804-11-2-local_11.2.0-460.27.04-1_arm64.deb && \
     apt-key add /var/cuda-repo-ubuntu1804-11-2-local/7fa2af80.pub && \
     apt-get update  && \
-    apt-get -y install cuda && \
+    apt-get -y install \
+        gnupg2 \
+        cuda && \
     export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}}$ && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version
@@ -82,8 +86,8 @@ RUN cd /opt/nvidia && \
 RUN cd /opt/nvidia && \
     mkdir dlib1921 && \
     cd dlib1921 && \
-    export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
-    export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
+    export PATH=/usr/local/cuda-12.0/bin${PATH:+:${PATH}}$ && \
+    export LD_LIBRARY_PATH=/usr/local/cuda-12.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip --progress=bar:force:noscroll && \
     unzip dlib.zip && \
     cd dlib-master && \
@@ -93,10 +97,11 @@ RUN cd /opt/nvidia && \
     cmake --build . && \
     cd ../ && \
     python3 setup.py install
+# here we should install opencv, but first get dlib comiled with CUDA support
 # install bindings for DeepStream Metadata libraries
 RUN cd /opt/nvidia/deepstream/deepstream/lib && \
-    export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
-    export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
+    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}}$ && \
+    export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     python3 setup.py install && \
     # and install other programs
     apt-get install -y \
