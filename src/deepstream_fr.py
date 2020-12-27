@@ -423,11 +423,6 @@ def main(argv):
         global folder_name
         folder_name = args.unclear
 
-    for i in range(0, len(stream)):
-        fps_streams["stream{0}".format(i)] = GETFPS(i)
-        log.info(f'- Detected stream: {stream[i]}')
-    number_sources = len(stream)
-
     # start logging and counter and create directory for any unknow faces just in case we find any
     global log
     logpath = Path(logdir)
@@ -445,6 +440,11 @@ def main(argv):
     known_faces_log = init_log(known_faces_logfile, 'known_faces', loglevel, logsize, logbackups)
     known_faces_log.critical('Start logging known faces')
 
+    for i in range(0, len(stream)):
+        fps_streams["stream{0}".format(i)] = GETFPS(i)
+        log.info(f'- Detected stream: {stream[i]}')
+    number_sources = len(stream)
+    
     # opening learned faces file
     log.info(f'- Opening learned faces file: {learnedfile}')
     with open(learnedfile, 'rb') as trainedfacesfile:
