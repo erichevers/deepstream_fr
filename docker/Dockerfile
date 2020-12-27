@@ -66,40 +66,30 @@ RUN cd /opt/nvidia && \
     libxext6 \
     libxrender1
 # upgrade cuda
-RUN cd /opt/nvidia && \
-    mkdir cuda && cd cuda && \
-    # remove old version first => not
-    # apt-get --purge remove cuda-10.2 && \
-    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
-    mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
-    wget https://developer.download.nvidia.com/compute/cuda/11.2.0/local_installers/cuda-repo-ubuntu1804-11-2-local_11.2.0-460.27.04-1_arm64.deb && \
-    apt-get -y install gnupg2 && \
-    dpkg -i cuda-repo-ubuntu1804-11-2-local_11.2.0-460.27.04-1_arm64.deb && \
-    apt-key add /var/cuda-repo-ubuntu1804-11-2-local/7fa2af80.pub && \
-    apt-get update  && \
-    apt-get -y install cuda && \
-    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
-    export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
-    nvcc --version
+# RUN cd /opt/nvidia && \
+#    mkdir cuda && cd cuda && \
+#    # remove old version first => not
+#    # apt-get --purge remove cuda-10.2 && \
+#    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
+#    mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
+#    wget https://developer.download.nvidia.com/compute/cuda/11.2.0/local_installers/cuda-repo-ubuntu1804-11-2-local_11.2.0-460.27.04-1_arm64.deb && \
+#    apt-get -y install gnupg2 && \
+#    dpkg -i cuda-repo-ubuntu1804-11-2-local_11.2.0-460.27.04-1_arm64.deb && \
+#    apt-key add /var/cuda-repo-ubuntu1804-11-2-local/7fa2af80.pub && \
+#    apt-get update  && \
+#    apt-get -y install cuda && \
+#    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
+#    export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
+#    nvcc --version
 # install dlib
 RUN cd /opt/nvidia && \
     mkdir dlib && \
     cd dlib && \
-    nvcc --version && \
-    cmake --version && \
-    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
-    export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
-    nvcc --version && \
-    apt-get update && apt-get install -y \
-    libhdf5-serial-dev \
-    hdf5-tools \
-    libhdf5-dev \
-    zlib1g-dev \
-    zip \
-    libjpeg8-dev \
-    liblapack-dev \
-    libblas-dev \
-    gfortran && \
+#    nvcc --version && \
+#    cmake --version && \
+#    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
+#    export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
+#    nvcc --version && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip && \
     unzip dlib.zip && \
     cd dlib-master && \
@@ -112,8 +102,8 @@ RUN cd /opt/nvidia && \
 # here we should install opencv, but first get dlib comiled with CUDA support
 # install bindings for DeepStream Metadata libraries
 RUN cd /opt/nvidia/deepstream/deepstream/lib && \
-    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
-    export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
+ #   export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
+ #   export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     python3 setup.py install && \
     # and install other programs
     apt-get install -y \
