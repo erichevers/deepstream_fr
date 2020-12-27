@@ -67,28 +67,16 @@ RUN cd /opt/nvidia && \
     libxrender1
 # upgrade cuda
 RUN cd /opt/nvidia && \
-    mkdir cuda && cd cuda && \
+    mkdir cuda1120 && cd cuda1120 && \
     wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/sbsa/cuda-ubuntu1804.pin && \
     mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
-    wget http://developer.download.nvidia.com/compute/cuda/11.0.2/local_installers/cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
-    apt-get -y install gnupg2 && \
-    dpkg -i cuda-repo-ubuntu1804-11-0-local_11.0.2-450.51.05-1_arm64.deb && \
-    apt-key add /var/cuda-repo-ubuntu1804-11-0-local/7fa2af80.pub && \
-    apt-get update && \
+    wget https://developer.download.nvidia.com/compute/cuda/11.2.0/local_installers/cuda-repo-ubuntu1804-11-2-local_11.2.0-460.27.04-1_arm64.deb && \
+    dpkg -i cuda-repo-ubuntu1804-11-2-local_11.2.0-460.27.04-1_arm64.deb && \
+    apt-key add /var/cuda-repo-ubuntu1804-11-2-local/7fa2af80.pub && \
+    apt-get update  && \
     apt-get -y install cuda && \
-    export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
-    export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
-    nvcc --version
-# install cuDNN
-COPY ./logdir/libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb /opt/nvidia
-RUN cd /opt/nvidia && \
-    mkdir cudnn && \
-    mv libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb cudnn/libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb && \
-    cd cudnn && \
-    export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
-    export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
-    sudo dpkg -i libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb && \
-    apt-get update && \
+    export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}}$ && \
+    export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version
 # install dlib
 RUN cd /opt/nvidia && \
@@ -149,6 +137,9 @@ RUN apt-get install -y \
     libblas-dev \
     gfortran
 #    pip3 install face_recognition
+# cleanup
+RUN rm -rf /opt/nvidia/dlib1921 && \
+    rm -rf /opt/nvidia/cuda1120
 # get our software ready and at the correct place
 WORKDIR /opt/nvidia/deepstream/deepstream-5.0/sources/deepstream_python_apps/apps/deepstream_fr
 COPY    ./src/ .
