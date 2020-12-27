@@ -89,7 +89,7 @@ RUN cd /opt/nvidia && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip && \
     unzip dlib.zip && \
-    cd /opt/nvidi/dlib1921/dlib-master && \
+    cd /opt/nvidia/dlib1921/dlib-master && \
     mkdir build && \
     # cd build && \
     # cmake .. && \
