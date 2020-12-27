@@ -85,15 +85,17 @@ RUN cd /opt/nvidia && \
 RUN cd /opt/nvidia && \
     mkdir dlib && \
     cd dlib && \
+    nvcc --version && \
     export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
+    nvcc --version && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip && \
     unzip dlib.zip && \
     cd dlib-master && \
     mkdir build && \
-    # cd build && \
-    # cmake .. && \
-    # cmake --build . && \
+    cd build && \
+    cmake .. && \
+    cmake --build . && \
     cd ../ && \
     python3 setup.py install
 # here we should install opencv, but first get dlib comiled with CUDA support
