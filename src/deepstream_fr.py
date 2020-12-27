@@ -361,7 +361,7 @@ def create_source_bin(index, uri):
     return nbin
 
 
-def main(args):
+def main(argparse):
     # first parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--learned', help='this is the file that contains the learned faces')
