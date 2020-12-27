@@ -79,17 +79,28 @@ RUN cd /opt/nvidia && \
     export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version
+# install cuDNN
+COPY ../libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb /opt/nvidia
+RUN cd /opt/nvidia && \
+    mkdir cudnn && \
+    mv libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb cudnn/libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb && \
+    cd cudnn && \
+    export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
+    export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
+    sudo dpkg -i libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb && \
+    apt-get update && \
+    nvcc --version
 # install dlib
 RUN cd /opt/nvidia && \
-    mkdir dlib2 && \
-    cd dlib2 && \
+    mkdir dlib1921 && \
+    cd dlib1921 && \
     export PATH=/usr/local/cuda-11.0/bin${PATH:+:${PATH}}$ && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip --progress=bar:force:noscroll && \
     unzip dlib.zip && \
     cd dlib-master && \
-    mkdir build2 && \
-    cd build2 && \
+    mkdir build && \
+    cd build && \
     cmake .. && \
     cmake --build . && \
     cd ../ && \
