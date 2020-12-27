@@ -80,7 +80,7 @@ RUN cd /opt/nvidia && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version
 # install cuDNN
-COPY ../libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb /opt/nvidia
+COPY ./logdir/libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb /opt/nvidia
 RUN cd /opt/nvidia && \
     mkdir cudnn && \
     mv libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb cudnn/libcudnn8-dev_8.0.5.39-1+cuda11.0_amd64.deb && \
