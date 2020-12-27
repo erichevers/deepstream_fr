@@ -86,23 +86,16 @@ RUN cd /opt/nvidia && \
     mkdir dlib && \
     cd dlib && \
     nvcc --version && \
+    cmake --version && \
     export PATH=/usr/local/cuda-11.2/bin${PATH:+:${PATH}} && \
     export LD_LIBRARY_PATH=/usr/local/cuda-11.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
     nvcc --version && \
     wget -O dlib.zip https://github.com/davisking/dlib/archive/master.zip -O dlib.zip && \
     unzip dlib.zip && \
-    # run test
-    cd dlib-master/cmake_utils/test_for_cudnn && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    cmake --build . && \
-    cd ../../.. && \
-    # end test
     cd dlib-master && \
     mkdir build && \
     cd build && \
-    cmake .. && \
+    cmake -DDLIB_USE_CUDA=1 .. && \
     cmake --build . && \
     cd ../ && \
     python3 setup.py install
