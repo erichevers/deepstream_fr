@@ -87,6 +87,7 @@ person_min_confidence = 0.33  # minimum confidence before we do face recognition
 Names = []
 Sequence = []
 Encodings = []
+stream = []
 folder_name = logdir + 'frames'
 
 
@@ -152,7 +153,7 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
                 save_image = True
                 frame_image = add_confidence_box(frame_image, obj_meta, obj_meta.confidence)
             # save and draw box when we have a person
-            if frame_meta.pad_index % sampling_rate == 0:
+            if frame_number % sampling_rate == 0:
                 # only draw a box once in a while depending on the sampling rate
                 # Getting Image data using nvbufsurface
                 # the input should be address of buffer and batch_id
@@ -166,7 +167,7 @@ def tiler_sink_pad_buffer_probe(pad, info, u_data):
             except StopIteration:
                 break
 
-        if frame_meta.pad_index % 1000 == 0 or num_rects:
+        if frame_number % 100 == 0 or num_rects:
             # at least once in the 1000 frames write some logging or when there was an object
             log.info(f'- Frame Number: {frame_number}, Number of Objects: {num_rects}, Vehicle_count: {obj_counter[PGIE_CLASS_ID_VEHICLE]}, Person_count={obj_counter[PGIE_CLASS_ID_PERSON]}')
         else:
