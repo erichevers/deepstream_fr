@@ -442,7 +442,7 @@ def main(argv):
 
     for i in range(0, len(stream)):
         fps_streams["stream{0}".format(i)] = GETFPS(i)
-        log.info(f'- Detected stream{i}: {stream[i]}')
+        log.info(f'- Detected stream{i}: {stream[i][0]}')
     number_sources = len(stream)
 
     # opening learned faces file
@@ -488,7 +488,7 @@ def main(argv):
         stream_path.mkdir(parents=True, exist_ok=True)
         frame_count["stream_" + str(i)] = 0
         saved_count["stream_" + str(i)] = 0
-        uri_name = stream[i]
+        uri_name = stream[i][0]
         if uri_name.startswith("rtsp://"):
             is_live = True
         source_bin = create_source_bin(i, uri_name)
