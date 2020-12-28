@@ -27,10 +27,10 @@ import os
 import os.path
 from os import path
 import logging
-import face_recognition  # to load the face recognition libary
-import pickle            # to load the trained faces file
-import argparse
-from pathlib import Path  # to auto create directories
+import face_recognition     # to load the face recognition libary
+import pickle               # to load the trained faces file
+import argparse             # include argparser
+from pathlib import Path    # to auto create directories
 from GenericFunctions import init_log
 
 # initiate deepstream variables
