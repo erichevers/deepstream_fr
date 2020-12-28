@@ -1,7 +1,7 @@
 # Deepstream Face Recognition
 This Face Recognition program for the Xavier NX is based on NVIDIA DeepStream
 
-This is work in progress. Nothing works yet, but will one day
+This is work in progress, but the basics are working
 
 # Setup:
 Get NVIDIA Jetson Xavier NX out of the box
